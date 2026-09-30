@@ -84,7 +84,7 @@ class BackupService:
                 total += path.stat().st_size
                 if count > MAX_ARCHIVE_FILES or total > MAX_ARCHIVE_BYTES:
                     raise ValueError("Backup exceeds configured limits")
-                archive.write(path, path.relative_to(self.root))
+                archive.write(path, path.relative_to(self.root).as_posix())
             validate_archive(archive)
 
     def extract(self) -> None:
