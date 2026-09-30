@@ -13,7 +13,7 @@ def atomic_copy(source, destination):
     try:
         shutil.copyfile(source, temporary)
         os.chmod(temporary, PRIVATE_FILE_MODE)
-        with temporary.open("rb") as handle:
+        with temporary.open("r+b") as handle:
             os.fsync(handle.fileno())
         os.replace(temporary, destination)
     finally:
