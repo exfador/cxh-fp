@@ -1,0 +1,117 @@
+import inspect
+from io import IOBase
+
+import telebot
+from telebot.apihelper import ApiTelegramException
+
+from tg_bot.constants.premium_emoji import (
+    ANIMATED_EMOJI,
+    EMOJI_ERROR_MARKERS,
+    HTML_PARSE_MODE,
+    UPLOAD_FIELDS,
+)
+from tg_bot.premium_policy import OwnerPremiumPolicy
+from tg_bot.premium_keyboard import decorate_keyboard
+from tg_bot.premium_text import decorate_html
+from tg_bot.link_previews import disable_link_previews
+
+
+def upload_positions(arguments):
+    positions = []
+    for field in UPLOAD_FIELDS:
+        value = arguments.get(field)
+        stream = value.file if isinstance(value, telebot.types.InputFile) else value
+        if isinstance(stream, IOBase) and stream.seekable():
+            positions.append((stream, stream.tell()))
+    return positions
+
+
+class PremiumTeleBot(telebot.TeleBot):
+    def __init__(self, token, *args, emoji_policy=None, **kwargs):
+        super().__init__(token, *args, **kwargs)
+        self.emoji_policy = emoji_policy or OwnerPremiumPolicy(token)
+        self.panel_navigation = None
+
+    def send_message(self, *args, **kwargs):
+        return self.ui_request(telebot.TeleBot.send_message, args, kwargs, "text")
+
+    def edit_message_text(self, *args, **kwargs):
+        return self.ui_request(telebot.TeleBot.edit_message_text, args, kwargs, "text")
+
+    def send_photo(self, *args, **kwargs):
+        return self.ui_request(telebot.TeleBot.send_photo, args, kwargs, "caption")
+
+    def send_document(self, *args, **kwargs):
+        return self.ui_request(telebot.TeleBot.send_document, args, kwargs, "caption")
+
+    def edit_message_caption(self, *args, **kwargs):
+        return self.ui_request(
+            telebot.TeleBot.edit_message_caption, args, kwargs, "caption"
+        )
+
+    def edit_message_reply_markup(self, *args, **kwargs):
+        return self.ui_request(
+            telebot.TeleBot.edit_message_reply_markup, args, kwargs, None
+        )
+
+    def delete_message(self, *args, **kwargs):
+        navigation = self.panel_navigation
+        bound = inspect.signature(telebot.TeleBot.delete_message).bind(
+            self, *args, **kwargs
+        )
+        if navigation and navigation.suppress_deletion(
+            bound.arguments["chat_id"], bound.arguments["message_id"]
+        ):
+            return True
+        return telebot.TeleBot.delete_message(*bound.args, **bound.kwargs)
+
+    def ui_request(self, method, args, kwargs, text_field):
+        if self.panel_navigation is not None:
+            return self.panel_navigation.request(
+                method, args, kwargs, text_field, self._ui_request
+            )
+        return self._ui_request(method, args, kwargs, text_field)
+
+    def _ui_request(self, method, args, kwargs, text_field):
+        bound = inspect.signature(method).bind(self, *args, **kwargs)
+        disable_link_previews(bound)
+        original = dict(bound.arguments)
+        if not self.can_decorate(bound.arguments):
+            return method(*bound.args, **bound.kwargs)
+        positions = upload_positions(original)
+        self.decorate_arguments(bound.arguments, text_field)
+        try:
+            return method(*bound.args, **bound.kwargs)
+        except ApiTelegramException as error:
+            if error.error_code != 400 or not any(
+                marker in error.description.casefold() for marker in EMOJI_ERROR_MARKERS
+            ):
+                raise
+            self.emoji_policy.disable()
+            for stream, position in positions:
+                stream.seek(position)
+            bound.arguments.clear()
+            bound.arguments.update(original)
+            return method(*bound.args, **bound.kwargs)
+
+    def can_decorate(self, arguments):
+        chat_id = arguments.get("chat_id")
+        if isinstance(chat_id, str) and chat_id.isascii() and chat_id.isdecimal():
+            chat_id = int(chat_id) if len(chat_id) <= 20 else None
+        return (
+            type(chat_id) is int
+            and chat_id > 0
+            and not arguments.get("inline_message_id")
+            and self.emoji_policy.enabled()
+        )
+
+    def decorate_arguments(self, arguments, text_field):
+        arguments["reply_markup"] = decorate_keyboard(
+            arguments.get("reply_markup"), ANIMATED_EMOJI
+        )
+        mode = arguments.get("parse_mode") or self.parse_mode
+        entities = arguments.get("entities") or arguments.get("caption_entities")
+        if text_field and mode == HTML_PARSE_MODE and not entities:
+            text = arguments.get(text_field)
+            if isinstance(text, str):
+                arguments[text_field] = decorate_html(text, ANIMATED_EMOJI)

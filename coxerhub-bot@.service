@@ -1,0 +1,33 @@
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/%i/coxerhub-bot
+ExecStart=/home/%i/coxerhub-bot/.venv/bin/python /home/%i/coxerhub-bot/main.py
+Restart=always
+RestartSec=10s
+SyslogIdentifier=coxerhub-bot-%i
+User=%i
+Environment="LANG=en_US.utf8"
+Environment="COXERHUB_IS_RUNNING_AS_SERVICE=1"
+
+ExecStartPre=+/usr/bin/install -m 755 -o root -g root -d /run/coxerhub-bot
+ExecStartPre=+/usr/bin/install -m 755 -o %i -g root -d /run/coxerhub-bot/%i
+
+PIDFile=/run/coxerhub-bot/%i/coxerhub-bot.pid
+
+DevicePolicy=closed
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateMounts=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectHostname=yes
+ProtectSystem=full
+ReadWritePaths=/home/%i/coxerhub-bot -/run/coxerhub-bot
+
+[Unit]
+After=network.target
+Description=CoxerHub Bot (on %I)
+Documentation=https://t.me/coxerhub

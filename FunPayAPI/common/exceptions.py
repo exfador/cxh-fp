@@ -1,0 +1,156 @@
+from urllib.parse import urlsplit, urlunsplit
+from FunPayAPI.common.constants import REDACTED_VALUE, SENSITIVE_HEADERS
+import requests
+from .. import types
+
+
+class AccountNotInitiatedError(Exception):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "Необходимо получить данные об аккаунте с помощью метода Account.get()"
+
+
+class RequestFailedError(Exception):
+    def __init__(self, response: requests.Response):
+        self.response = response
+        self.status_code = response.status_code
+        parsed = urlsplit(response.request.url)
+        self.url = urlunsplit(
+            (parsed.scheme, parsed.netloc.rsplit("@", 1)[-1], parsed.path, "", "")
+        )
+        self.request_headers = {
+            name: REDACTED_VALUE if name.lower() in SENSITIVE_HEADERS else value
+            for name, value in response.request.headers.items()
+        }
+        self.request_body = REDACTED_VALUE
+        self.log_response = False
+
+    def short_str(self):
+        return f"Ошибка запроса к {self.url}. (Статус-код: {self.status_code})"
+
+    def __str__(self):
+        return self.short_str()
+
+
+class UnauthorizedError(RequestFailedError):
+    def __init__(self, response):
+        super(UnauthorizedError, self).__init__(response)
+
+    def short_str(self):
+        return "Не авторизирован (возможно, введен неверный golden_key?)."
+
+
+class WithdrawError(RequestFailedError):
+    def __init__(self, response, error_message: str | None):
+        super(WithdrawError, self).__init__(response)
+        self.error_message = error_message
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Произошла ошибка при выводе средств с аккаунта{(f': {self.error_message}' if self.error_message else '.')}"
+
+
+class RaiseError(RequestFailedError):
+    def __init__(
+        self,
+        response,
+        category: types.Category,
+        error_message: str | None,
+        wait_time: int | None,
+    ):
+        super(RaiseError, self).__init__(response)
+        self.category = category
+        self.error_message = error_message
+        self.wait_time = wait_time
+
+    def short_str(self):
+        return f'''Не удалось поднять лоты категории "{self.category.name}"{(f": {self.error_message}" if self.error_message else ".")}'''
+
+
+class ImageUploadError(RequestFailedError):
+    def __init__(self, response: requests.Response, error_message: str | None):
+        super(ImageUploadError, self).__init__(response)
+        self.error_message = error_message
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Произошла ошибка при выгрузке изображения{(f': {self.error_message}' if self.error_message else '.')}"
+
+
+class MessageNotDeliveredError(RequestFailedError):
+    def __init__(
+        self, response: requests.Response, error_message: str | None, chat_id: int
+    ):
+        super(MessageNotDeliveredError, self).__init__(response)
+        self.error_message = error_message
+        self.chat_id = chat_id
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Не удалось отправить сообщение в чат {self.chat_id}{(f': {self.error_message}' if self.error_message else '.')}"
+
+
+class FeedbackEditingError(RequestFailedError):
+    def __init__(
+        self, response: requests.Response, error_message: str | None, order_id: str
+    ):
+        super(FeedbackEditingError, self).__init__(response)
+        self.error_message = error_message
+        self.order_id = order_id
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Не удалось изменить состояние отзыва / ответа на отзыв на заказ {self.order_id}{(f': {self.error_message}' if self.error_message else '.')}"
+
+
+class LotParsingError(RequestFailedError):
+    def __init__(
+        self, response: requests.Response, error_message: str | None, lot_id: int
+    ):
+        super(LotParsingError, self).__init__(response)
+        self.error_message = error_message
+        self.lot_id = lot_id
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Не удалось получить данные лота {self.lot_id}{(f': {self.error_message}' if self.error_message else '.')}"
+
+
+class LotSavingError(RequestFailedError):
+    def __init__(
+        self,
+        response: requests.Response,
+        error_message: str | None,
+        lot_id: int,
+        errors: dict[str, str],
+    ):
+        super(LotSavingError, self).__init__(response)
+        self.error_message = error_message
+        self.lot_id = lot_id
+        self.errors = errors
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Не удалось сохранить лот {self.lot_id}{(f': {self.error_message}' if self.error_message else '.')}"
+
+
+class RefundError(RequestFailedError):
+    def __init__(
+        self, response: requests.Response, error_message: str | None, order_id: str
+    ):
+        super(RefundError, self).__init__(response)
+        self.error_message = error_message
+        self.order_id = order_id
+        if not self.error_message:
+            self.log_response = True
+
+    def short_str(self):
+        return f"Не удалось вернуть средства по заказу {self.order_id}{(f': {self.error_message}' if self.error_message else '.')}"

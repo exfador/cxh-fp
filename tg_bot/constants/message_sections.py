@@ -1,0 +1,24 @@
+BUTTON_LABEL_LIMIT = 44
+LABEL_ELLIPSIS = "…"
+PRODUCTS_DIRECTORY = "storage/products"
+PRODUCTS_FALLBACK_PAGE_SIZE = 5
+PRODUCT_FILE_ICON = "📄"
+LOT_ICON = "📦"
+TEMPLATE_ICON = "💬"
+PINNED_PLUGIN_ICON = "📌"
+PLUGIN_ICON = "🧩"
+INACTIVE_SETTING_ICON = "⚪"
+DISABLED_SETTING_ICON = "🔴"
+ENABLED_SETTING_ICON = "🟢"
+DOWNLOAD_PRODUCTS_CALLBACK = "download_products_file"
+DELETE_PRODUCTS_CALLBACK = "del_products_file"
+CONFIRM_DELETE_PRODUCTS_CALLBACK = "confirm_del_products_file"
+UPDATE_FUNPAY_LOTS_CALLBACK = "update_funpay_lots"
+SWITCH_LOT_CALLBACK = "switch_lot"
+TEST_DELIVERY_CALLBACK = "test_auto_delivery"
+LOT_SETTINGS = (
+    ("ea_delivery", "autoDelivery", "disable"),
+    ("ea_multidelivery", "multiDelivery", "disableMultiDelivery"),
+    ("ea_restore", "autoRestore", "disableAutoRestore"),
+    ("ea_deactivate", "autoDisable", "disableAutoDisable"),
+)

@@ -1,0 +1,15 @@
+🦊 CXH FP · 1.1
+
+Your FunPay store in Telegram.
+
+📦 Offers, prices and delivery
+🧾 Orders and buyer messages
+💬 Replies, reviews and templates
+🧩 Store plugins
+
+Start with /start or /menu
+
+📣 Channel: @funpay_coxerhub
+https://t.me/funpay_coxerhub
+👤 Developer and contact: @coxerhub
+https://t.me/coxerhub

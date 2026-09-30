@@ -1,0 +1,7 @@
+--require-hashes
+-r requirements/locked/development-1.txt
+-r requirements/locked/development-2.txt
+-r requirements/locked/development-3.txt
+-r requirements/locked/development-4.txt
+-r requirements/locked/development-5.txt
+-r requirements/locked/development-6.txt
