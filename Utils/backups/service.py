@@ -84,8 +84,14 @@ class BackupService:
                 total += path.stat().st_size
                 if count > MAX_ARCHIVE_FILES or total > MAX_ARCHIVE_BYTES:
                     raise ValueError("Backup exceeds configured limits")
-                archive.write(path, path.relative_to(self.root).as_posix())
+                self._write_member(archive, path)
             validate_archive(archive)
+
+    def _write_member(self, archive, path):
+        member = zipfile.ZipInfo(path.relative_to(self.root).as_posix())
+        member.compress_type = zipfile.ZIP_DEFLATED
+        with path.open("rb") as incoming, archive.open(member, "w") as outgoing:
+            shutil.copyfileobj(incoming, outgoing)
 
     def extract(self) -> None:
         with backup_lock(self.root):
