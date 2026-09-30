@@ -14,6 +14,7 @@ from app.setup.steps import (
 )
 from app.setup.storage import write_setup_config
 from app.setup.terminal import SetupConsole
+from app.console_encoding import configure_terminal
 from Utils.config_loader import load_main_config
 
 
@@ -89,6 +90,7 @@ def main():
     from getpass import GetPassWarning
     from app.constants.runtime import PROJECT_ROOT
 
+    configure_terminal()
     parser = argparse.ArgumentParser()
     parser.add_argument("--language", choices=("ru", "en"))
     parser.add_argument("--no-color", action="store_true")

@@ -1,3 +1,4 @@
+from app.console_encoding import configure_terminal
 import argparse
 import os
 from collections import deque
@@ -68,6 +69,7 @@ def backup_command(root, action):
 
 
 def main(argv=None, root=PROJECT_ROOT):
+    configure_terminal()
     options = arguments(argv)
     if options.command in (None, "run"):
         from app.bootstrap import main as run

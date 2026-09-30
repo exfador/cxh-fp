@@ -1,3 +1,4 @@
+from app.console_encoding import configure_terminal
 import subprocess
 import sys
 
@@ -10,6 +11,7 @@ from app.installer.environment import (
 
 
 def main():
+    configure_terminal()
     executable = environment_python(PROJECT_ROOT)
     if not executable.is_file():
         print("Run setup.py first / Сначала запустите setup.py")

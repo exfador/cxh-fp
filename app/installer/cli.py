@@ -1,3 +1,4 @@
+from app.console_encoding import configure_terminal
 import argparse
 import platform
 import subprocess
@@ -64,6 +65,7 @@ def execute(options, console, root):
 
 
 def main(argv=None, console=None, root=PROJECT_ROOT):
+    configure_terminal()
     options = arguments(argv)
     console = console or SetupConsole(color=False if options.no_color else None)
     try:

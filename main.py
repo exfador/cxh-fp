@@ -1,3 +1,4 @@
+from app.console_encoding import configure_terminal
 import os
 import sys
 from pathlib import Path
@@ -6,6 +7,7 @@ from app.constants.update_runtime import UPDATE_CHILD_FLAG, UPDATE_CHILD_VALUE
 
 
 def main():
+    configure_terminal()
     root = Path(__file__).resolve().parent
     os.chdir(root)
     if (
