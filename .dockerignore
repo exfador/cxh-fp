@@ -36,3 +36,12 @@ build
 dist
 test.py
 *.zip
+tests/
+tools/
+docs/ui-preview/
+docs/architecture.md
+docs/release-guide.md
+requirements-dev.txt
+requirements/inputs/
+requirements/locked/development-*.txt
+.github/
