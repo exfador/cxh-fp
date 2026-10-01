@@ -135,3 +135,5 @@ operator_watermark_clear = "🚫 No signature"
 
 menu_updates_button = "🔄 Updates"
 menu_check_updates_button = "🔎 Check releases"
+
+menu_unknown_command_text = "❔ <b>Command unavailable</b>\n\nThis bot has no handler for that command. If it belongs to a plugin, check that the plugin is installed, enabled and loaded after restarting.\n\nOpen Plugins or use the button below to return to the main menu."

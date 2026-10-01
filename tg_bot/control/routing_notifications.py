@@ -45,7 +45,7 @@ class RoutingNotifications:
         )
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
         self.msg_handler(
-            self.send_settings_menu,
+            self.send_unknown_command,
             content_types=["text"],
             func=lambda message: bool(message.text) and message.text.startswith("/"),
         )

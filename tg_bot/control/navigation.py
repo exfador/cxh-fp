@@ -13,7 +13,7 @@ from tg_bot.constants.menu import (
     MENU_NOT_MODIFIED,
 )
 from tg_bot import static_keyboards
-from tg_bot.keyboard_views.menu import home_keyboard
+from tg_bot.keyboard_views.menu import home_keyboard, unknown_command_keyboard
 from tg_bot.menu_data import home_text
 
 
@@ -24,6 +24,15 @@ class MenuNavigation:
             and user.id in self.authorized_users
             and chat.type == MENU_PRIVATE_CHAT
             and chat.id == user.id
+        )
+
+    def send_unknown_command(self, message):
+        if not self.menu_user_allowed(message.from_user, message.chat):
+            return
+        self.bot.send_message(
+            message.chat.id,
+            Localizer().translate("menu_unknown_command_text"),
+            reply_markup=unknown_command_keyboard(),
         )
 
     def send_home_menu(self, message):

@@ -211,3 +211,11 @@ def restart_keyboard(token):
         menu_button("menu_restart_confirm", token, "confirm_restart"),
         menu_button("gl_cancel", token, "service"),
     )
+
+
+def unknown_command_keyboard():
+    translate = Localizer().translate
+    return Keyboard().row(
+        Button(translate("mm_plugins"), callback_data=f"{CBT.PLUGINS_LIST}:0"),
+        Button(translate("menu_home_button"), callback_data=CBT.MAIN),
+    )
