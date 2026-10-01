@@ -7,7 +7,7 @@ from threading import RLock
 
 import telebot
 from telebot.apihelper import ApiTelegramException
-from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
+from telebot.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
 from locales.localizer import Localizer
 from tg_bot import CBT
@@ -24,6 +24,8 @@ from tg_bot.constants.panel_navigation import (
     PANEL_REPLACE_MENU_ACTIONS,
     PANEL_REPLACE_METHOD,
 )
+from tg_bot.constants.plugin_consent import UPLOAD_CONSENT_PREFIX
+from tg_bot.keyboard_appearance import canonical_keyboard, incoming_keyboard
 from tg_bot.panel_history import PanelHistory
 
 
@@ -34,10 +36,15 @@ class PanelContext:
     message_id: int
     replace: bool = False
     home: bool = False
+    callback: CallbackQuery | None = None
 
     @property
     def key(self):
         return self.owner_id, self.chat_id, self.message_id
+
+    @property
+    def route(self):
+        return self.callback.data if self.callback else None
 
 
 class PanelNavigation:
@@ -59,13 +66,14 @@ class PanelNavigation:
             call.message.id,
             self.replaces_screen(call.data),
             self.is_home(call.data),
+            call,
         )
         with self.locks[hash(panel.key) % PANEL_LOCK_COUNT], self.activate(panel):
             if not self.history.contains(*panel.key):
                 self.history.begin(
                     *panel.key,
                     getattr(call.message, "html_text", None) or call.message.text or "",
-                    getattr(call.message, "reply_markup", None),
+                    incoming_keyboard(call.message),
                 )
             return handler(call)
 
@@ -91,7 +99,12 @@ class PanelNavigation:
 
     def replaces_screen(self, callback):
         parts = (callback or "").split(":")
-        if parts[0] in {CBT.SWITCH, CBT.SWITCH_TG_NOTIFICATIONS, CBT.LANG}:
+        if parts[0] in {
+            CBT.SWITCH,
+            CBT.SWITCH_TG_NOTIFICATIONS,
+            CBT.LANG,
+            UPLOAD_CONSENT_PREFIX,
+        }:
             return True
         return len(parts) > 2 and parts[2] in PANEL_REPLACE_MENU_ACTIONS
 
@@ -158,22 +171,26 @@ class PanelNavigation:
 
     def record_screen(self, panel, text, markup, nonce, replace):
         if panel.home:
-            self.history.begin(*panel.key, text, markup, token=nonce)
+            self.history.begin(*panel.key, text, markup, token=nonce, route=panel.route)
+            self.clear_panel_state(panel)
             return
+        previous = self.history.checkpoint(*panel.key)
         self.history.capture(
             *panel.key,
             text,
             markup,
             token=nonce,
             replace=replace or panel.replace,
+            route=panel.route,
         )
+        current = self.history.checkpoint(*panel.key)
+        if previous.pages and len(current.pages.snapshots) < len(
+            previous.pages.snapshots
+        ):
+            self.clear_panel_state(panel)
 
     def navigation_keyboard(self, keyboard, token, allow_back=True):
-        result = (
-            InlineKeyboardMarkup.de_json(keyboard.to_dict())
-            if keyboard
-            else InlineKeyboardMarkup()
-        )
+        result = canonical_keyboard(keyboard) if keyboard else InlineKeyboardMarkup()
         if not allow_back:
             return result
         translate = Localizer().translate

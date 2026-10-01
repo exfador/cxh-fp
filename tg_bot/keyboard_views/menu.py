@@ -7,6 +7,7 @@ from locales.localizer import Localizer
 from tg_bot.keyboard_views.styled_button import StyledButton
 from tg_bot.constants.button_styles import BUTTON_SUCCESS
 from tg_bot import CBT, static_keyboards
+from tg_bot.constants.promotion import SOCIAL_SERVICE_LABEL, SOCIAL_SERVICE_URL
 from tg_bot.constants.menu import (
     MENU_PREFIX,
     MENU_UNSET_ARGUMENT,
@@ -56,6 +57,10 @@ def home_keyboard(token):
             menu_button("menu_service_button", token, "service"),
             menu_button("menu_help_button", token, "help"),
         ],
+    )
+    keyboard.keyboard.insert(
+        -1,
+        [Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL)],
     )
     return keyboard
 

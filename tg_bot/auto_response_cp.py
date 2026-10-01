@@ -300,6 +300,7 @@ def init_auto_response_cp(cardinal: Cardinal, *args):
         logger.info(
             _("log_param_changed", c.from_user.username, c.from_user.id, command, value)
         )
+        c.data = f"{CBT.EDIT_CMD}:{command_index}:{offset}"
         open_edit_command_cp(c)
 
     def del_command(c: CallbackQuery):
@@ -317,13 +318,8 @@ def init_auto_response_cp(cardinal: Cardinal, *args):
         logger.info(
             _("log_ar_cmd_deleted", c.from_user.username, c.from_user.id, command)
         )
-        bot.edit_message_text(
-            _("desc_ar_list"),
-            c.message.chat.id,
-            c.message.id,
-            reply_markup=keyboards.commands_list(cardinal, offset),
-        )
-        bot.answer_callback_query(c.id)
+        c.data = f"{CBT.CMD_LIST}:{offset}"
+        open_commands_list(c)
 
     tg.cbq_handler(open_commands_list, lambda c: c.data.startswith(f"{CBT.CMD_LIST}:"))
     tg.cbq_handler(act_add_command, lambda c: c.data == CBT.ADD_CMD)

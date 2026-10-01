@@ -14,6 +14,7 @@ from tg_bot.premium_policy import OwnerPremiumPolicy
 from tg_bot.premium_keyboard import decorate_keyboard
 from tg_bot.premium_text import decorate_html
 from tg_bot.link_previews import disable_link_previews
+from tg_bot.keyboard_appearance import canonical_keyboard
 
 
 def upload_positions(arguments):
@@ -31,6 +32,17 @@ class PremiumTeleBot(telebot.TeleBot):
         super().__init__(token, *args, **kwargs)
         self.emoji_policy = emoji_policy or OwnerPremiumPolicy(token)
         self.panel_navigation = None
+
+    def add_message_handler(self, handler_dict):
+        command_positions = [
+            index
+            for index, existing in enumerate(self.message_handlers)
+            if existing.get("filters", {}).get("commands")
+        ]
+        if handler_dict.get("filters", {}).get("commands") and command_positions:
+            self.message_handlers.insert(command_positions[-1] + 1, handler_dict)
+            return
+        super().add_message_handler(handler_dict)
 
     def send_message(self, *args, **kwargs):
         return self.ui_request(telebot.TeleBot.send_message, args, kwargs, "text")
@@ -75,6 +87,10 @@ class PremiumTeleBot(telebot.TeleBot):
     def _ui_request(self, method, args, kwargs, text_field):
         bound = inspect.signature(method).bind(self, *args, **kwargs)
         disable_link_previews(bound)
+        if "reply_markup" in bound.arguments:
+            bound.arguments["reply_markup"] = canonical_keyboard(
+                bound.arguments["reply_markup"]
+            )
         original = dict(bound.arguments)
         if not self.can_decorate(bound.arguments):
             return method(*bound.args, **bound.kwargs)

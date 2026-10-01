@@ -26,6 +26,7 @@ class PanelSnapshot:
     text: str
     markup: InlineKeyboardMarkup | dict[str, object] | None
     token: str
+    route: str | None = None
 
     @property
     def back_callback(self):
@@ -74,15 +75,23 @@ def same_presentation(first, second):
     ) == keyboard_content(second.markup)
 
 
+def same_destination(first, second):
+    if first.route and second.route:
+        return first.route == second.route
+    return same_presentation(first, second)
+
+
 class PanelHistory:
     def __init__(self, clock=monotonic):
         self.clock = clock
         self.panels: OrderedDict[tuple[int, int, int], PanelPages] = OrderedDict()
         self.lock = RLock()
 
-    def begin(self, owner_id, chat_id, message_id, text, markup, *, token=None):
+    def begin(
+        self, owner_id, chat_id, message_id, text, markup, *, token=None, route=None
+    ):
         snapshot = self.create_snapshot(
-            owner_id, chat_id, message_id, text, markup, token
+            owner_id, chat_id, message_id, text, markup, token, route
         )
         with self.lock:
             self.remove_expired()
@@ -90,10 +99,19 @@ class PanelHistory:
             return deepcopy(snapshot)
 
     def capture(
-        self, owner_id, chat_id, message_id, text, markup, *, token=None, replace=False
+        self,
+        owner_id,
+        chat_id,
+        message_id,
+        text,
+        markup,
+        *,
+        token=None,
+        replace=False,
+        route=None,
     ):
         snapshot = self.create_snapshot(
-            owner_id, chat_id, message_id, text, markup, token
+            owner_id, chat_id, message_id, text, markup, token, route
         )
         with self.lock:
             self.remove_expired()
@@ -112,15 +130,34 @@ class PanelHistory:
             next_snapshot = replace_dataclass(
                 deepcopy(snapshot), token=self.resolve_token(token)
             )
-            if replace or same_presentation(pages.snapshots[-1], snapshot):
-                next_snapshot = replace_dataclass(
-                    next_snapshot, token=token or pages.snapshots[-1].token
-                )
-                self.store(snapshot.key, (*pages.snapshots[:-1], next_snapshot))
-                return deepcopy(next_snapshot)
-            snapshots = (*pages.snapshots, next_snapshot)[-PANEL_HISTORY_PAGE_LIMIT:]
+            snapshots = self.transition_stack(
+                pages.snapshots, next_snapshot, token, replace
+            )
             self.store(snapshot.key, snapshots)
-            return deepcopy(next_snapshot)
+            return deepcopy(snapshots[-1])
+
+    def transition_stack(self, snapshots, snapshot, token, replace):
+        destination = self.destination_stack(snapshots, snapshot)
+        if len(destination) < len(snapshots):
+            return destination
+        current = snapshots[-1]
+        if replace or same_presentation(current, snapshot):
+            updated = replace_dataclass(
+                snapshot,
+                token=token or current.token,
+                route=current.route or snapshot.route,
+            )
+            return (*snapshots[:-1], updated)
+        return destination
+
+    def destination_stack(self, snapshots, next_snapshot):
+        for index in range(len(snapshots) - 1, -1, -1):
+            if same_destination(snapshots[index], next_snapshot):
+                destination = replace_dataclass(
+                    next_snapshot, route=next_snapshot.route or snapshots[index].route
+                )
+                return (*snapshots[:index], destination)
+        return (*snapshots, next_snapshot)[-PANEL_HISTORY_PAGE_LIMIT:]
 
     def current(self, owner_id, chat_id, message_id):
         with self.lock:
@@ -174,7 +211,9 @@ class PanelHistory:
                 self.panels.popitem(last=False)
             return True
 
-    def create_snapshot(self, owner_id, chat_id, message_id, text, markup, token=None):
+    def create_snapshot(
+        self, owner_id, chat_id, message_id, text, markup, token=None, route=None
+    ):
         return PanelSnapshot(
             owner_id,
             chat_id,
@@ -182,6 +221,7 @@ class PanelHistory:
             text,
             deepcopy(markup),
             self.resolve_token(token),
+            route,
         )
 
     def create_token(self):

@@ -182,13 +182,8 @@ class DeliveryProductControls:
                     "log_gf_deleted", c.from_user.username, c.from_user.id, file_name
                 )
             )
-            self.bot.edit_message_text(
-                _module_state._("desc_gf"),
-                c.message.chat.id,
-                c.message.id,
-                reply_markup=kb.products_files_list(offset),
-            )
-            self.bot.answer_callback_query(c.id)
+            c.data = f"{CBT.PRODUCTS_FILES_LIST}:{offset}"
+            self.open_gf_list(c)
         except:
             keyboard = K().add(
                 B(

@@ -36,6 +36,7 @@ from tg_bot.keyboard_views.notification_layout import (
     reply_notification_buttons,
 )
 from tg_bot.utils import add_navigation_buttons, bool_to_text
+from tg_bot.promotion import plugin_store_keyboard
 
 if TYPE_CHECKING:
     from cardinal import Cardinal
@@ -383,9 +384,11 @@ def plugins_list(c: Cardinal, offset: int) -> K:
         len(list(c.plugins.keys())),
         CBT.PLUGINS_LIST,
     )
-    return keyboard.row(
-        translated_button("pl_add", f"{CBT.UPLOAD_PLUGIN}:{offset}"),
-        translated_button("gl_back", CBT.MAIN),
+    return plugin_store_keyboard(
+        keyboard.row(
+            translated_button("pl_add", f"{CBT.UPLOAD_PLUGIN}:{offset}"),
+            translated_button("gl_back", CBT.MAIN),
+        )
     )
 
 

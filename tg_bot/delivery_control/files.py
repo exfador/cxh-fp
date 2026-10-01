@@ -158,13 +158,8 @@ class DeliveryFileControls:
                 value,
             )
         )
-        self.bot.edit_message_text(
-            utils.generate_lot_info_text(lot_obj),
-            c.message.chat.id,
-            c.message.id,
-            reply_markup=kb.edit_lot(self.crd, lot_number, offset),
-        )
-        self.bot.answer_callback_query(c.id)
+        c.data = f"{CBT.EDIT_AD_LOT}:{lot_number}:{offset}"
+        self.open_edit_lot_cp(c)
 
     def create_lot_delivery_test(self, c: CallbackQuery):
         split = c.data.split(":")
@@ -213,13 +208,8 @@ class DeliveryFileControls:
         _module_state.logger.info(
             _module_state._("log_ad_deleted", c.from_user.username, c.from_user.id, lot)
         )
-        self.bot.edit_message_text(
-            _module_state._("desc_ad_list"),
-            c.message.chat.id,
-            c.message.id,
-            reply_markup=kb.lots_list(self.crd, offset),
-        )
-        self.bot.answer_callback_query(c.id)
+        c.data = f"{CBT.AD_LOTS_LIST}:{offset}"
+        self.open_ad_lots_list(c)
 
     def update_funpay_lots_list(self, c: CallbackQuery):
         offset = int(c.data.split(":")[1])

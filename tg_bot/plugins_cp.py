@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from cardinal import Cardinal
 from tg_bot import utils, keyboards, CBT
-from tg_bot.static_keyboards import UPLOAD_PLUGIN
+from tg_bot.control.plugin_consent import PluginUploadConsent
+from tg_bot.constants.plugin_consent import UPLOAD_CONSENT_PREFIX
 from locales.localizer import Localizer
 from telebot.types import (
     InlineKeyboardMarkup as K,
@@ -185,31 +186,7 @@ def init_plugins_cp(cardinal: Cardinal, *args):
         c.data = f"{CBT.EDIT_PLUGIN}:{uuid}:{offset}"
         open_edit_plugin_cp(c)
 
-    def act_upload_plugin(obj: CallbackQuery | Message):
-        if isinstance(obj, CallbackQuery):
-            offset = int(obj.data.split(":")[1])
-            result = bot.send_message(
-                obj.message.chat.id, _("pl_new"), reply_markup=UPLOAD_PLUGIN()
-            )
-            tg.set_state(
-                obj.message.chat.id,
-                result.id,
-                obj.from_user.id,
-                CBT.UPLOAD_PLUGIN,
-                {"offset": offset},
-            )
-            bot.answer_callback_query(obj.id)
-        else:
-            result = bot.send_message(
-                obj.chat.id, _("pl_new"), reply_markup=UPLOAD_PLUGIN()
-            )
-            tg.set_state(
-                obj.chat.id,
-                result.id,
-                obj.from_user.id,
-                CBT.UPLOAD_PLUGIN,
-                {"offset": 0},
-            )
+    consent = PluginUploadConsent(tg, open_plugins_list)
 
     tg.cbq_handler(
         open_plugins_list, lambda c: c.data.startswith(f"{CBT.PLUGINS_LIST}:")
@@ -233,7 +210,11 @@ def init_plugins_cp(cardinal: Cardinal, *args):
     )
     tg.cbq_handler(pin_plugin, lambda c: c.data.startswith(f"{CBT.PIN_PLUGIN}:"))
     tg.cbq_handler(
-        act_upload_plugin, lambda c: c.data.startswith(f"{CBT.UPLOAD_PLUGIN}:")
+        consent.request, lambda c: c.data.startswith(f"{CBT.UPLOAD_PLUGIN}:")
+    )
+
+    tg.cbq_handler(
+        consent.decide, lambda c: c.data.startswith(f"{UPLOAD_CONSENT_PREFIX}:")
     )
 
 

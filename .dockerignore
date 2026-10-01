@@ -45,3 +45,5 @@ requirements-dev.txt
 requirements/inputs/
 requirements/locked/development-*.txt
 .github/
+
+/plugin_services/

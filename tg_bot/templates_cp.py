@@ -143,13 +143,8 @@ def init_templates_cp(cardinal: Cardinal, *args):
                 private_content_summary(template),
             )
         )
-        bot.edit_message_text(
-            _("desc_tmplt"),
-            c.message.chat.id,
-            c.message.id,
-            reply_markup=keyboards.templates_list(cardinal, offset),
-        )
-        bot.answer_callback_query(c.id)
+        c.data = f"{CBT.TMPLT_LIST}:{offset}"
+        open_templates_list(c)
 
     def send_template(c: CallbackQuery):
         split = c.data.split(":")

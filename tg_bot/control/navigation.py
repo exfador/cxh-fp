@@ -31,12 +31,19 @@ class MenuNavigation:
             return
         self.clear_state(message.chat.id, message.from_user.id)
         token = self.menu_store.create(message.from_user.id, message.chat.id, 0)
+        text = home_text(self.cardinal)
+        keyboard = home_keyboard(token)
         sent = self.bot.send_message(
             message.chat.id,
-            home_text(self.cardinal),
-            reply_markup=home_keyboard(token),
+            text,
+            reply_markup=keyboard,
         )
         self.menu_store.update(token, message_id=sent.id)
+        navigation = getattr(self, "panel_navigation", None)
+        if navigation is not None:
+            navigation.history.begin(
+                message.from_user.id, message.chat.id, sent.id, text, keyboard
+            )
 
     def open_home_menu(self, call):
         if not call.message or not self.menu_user_allowed(

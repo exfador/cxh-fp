@@ -482,3 +482,11 @@ def __getattr__(name):
 
 def __dir__():
     return sorted(set(globals()) | set(dir(_menu)))
+
+
+from locales.translations.en.promotion import (
+    plugin_store_button,
+    social_service_button,
+    plugin_upload_confirmation,
+    plugin_upload_confirmation_expired,
+)

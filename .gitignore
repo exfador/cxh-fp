@@ -38,12 +38,13 @@ docs/release-guide.md
 requirements-dev.txt
 requirements/inputs/
 requirements/locked/development-*.txt
+
+/plugin_services/
 /.github/
 /backups/
 /configs/
 /docs/
 /logs/
-/plugin_services/
 /plugins/
 /run/
 /storage/

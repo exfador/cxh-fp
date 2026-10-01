@@ -41,11 +41,18 @@ def error_text(error):
     return text
 
 
+def confirmed_upload(controller, message):
+    state = controller.get_state(message.chat.id, message.from_user.id)
+    if not state or state["state"] != CBT.UPLOAD_PLUGIN:
+        return None
+    return state if state["data"].get("confirmed") is True else None
+
+
 def upload_plugin(controller, message):
     if not controller.menu_user_allowed(message.from_user, message.chat):
         return
-    state = controller.get_state(message.chat.id, message.from_user.id)
-    if state is None or state["state"] != CBT.UPLOAD_PLUGIN:
+    state = confirmed_upload(controller, message)
+    if state is None:
         return
     offset = state["data"]["offset"]
     translate = Localizer().translate
