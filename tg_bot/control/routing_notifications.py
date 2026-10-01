@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from tg_bot.constants.notification_policy import DISABLED_NOTIFICATION_TYPES
 from app.constants.languages import REMOVED_LANGUAGE
 from tg_bot.constants.menu import MENU_PREFIX, MENU_INPUT_STATE
-from tg_bot.constants.commands import PUBLIC_COMMANDS
 from tg_bot.constants.blocklist import BLOCKLIST_INPUT_STATE
 from tg_bot.constants.operator import OPERATOR_PREFIX
 from tg_bot.constants.panel_navigation import PANEL_CALLBACK_PREFIX
@@ -44,6 +43,7 @@ class RoutingNotifications:
             func=lambda m: self.is_file_handler(m),
         )
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
+        self.msg_handler(self.restart_cardinal, commands=["restart"])
         self.msg_handler(
             self.send_unknown_command,
             content_types=["text"],
@@ -278,7 +278,7 @@ class RoutingNotifications:
         for lang in (None, *_module_state.localizer.languages.keys()):
             commands = [
                 BotCommand(command, _module_state._(label, language=lang))
-                for command, label in PUBLIC_COMMANDS
+                for command, label in self.commands.items()
             ]
             self.bot.set_my_commands(commands, language_code=lang)
 

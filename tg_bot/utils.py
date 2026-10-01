@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -33,6 +34,14 @@ from tg_bot.message_formatting import message_author_header, message_body, messa
 
 localizer = Localizer()
 _ = localizer.translate
+
+
+def parse_chat_id(value: str) -> int | str:
+    if re.fullmatch(r"[0-9]+", value):
+        return int(value)
+    if re.fullmatch(r"users-[0-9]+-[0-9]+", value):
+        return value
+    raise ValueError("Invalid FunPay chat identifier")
 
 
 class NotificationTypes:

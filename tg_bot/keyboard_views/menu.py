@@ -4,8 +4,9 @@ from telebot.types import (
 )
 
 from locales.localizer import Localizer
+from app.constants.branding import CHAT_URL
 from tg_bot.keyboard_views.styled_button import StyledButton
-from tg_bot.constants.button_styles import BUTTON_SUCCESS
+from tg_bot.constants.button_styles import BUTTON_PRIMARY, BUTTON_SUCCESS
 from tg_bot import CBT, static_keyboards
 from tg_bot.constants.promotion import SOCIAL_SERVICE_LABEL, SOCIAL_SERVICE_URL
 from tg_bot.constants.menu import (
@@ -40,27 +41,32 @@ def menu_back(keyboard, token, section="home"):
 
 
 def home_keyboard(token):
-    keyboard = static_keyboards.SETTINGS_SECTIONS()
-    keyboard.keyboard[-2].append(
-        menu_button("menu_lots_button", token, "lots", style=BUTTON_SUCCESS)
+    keyboard = Keyboard().row(
+        menu_button("menu_lots_button", token, "lots", style=BUTTON_PRIMARY),
+        menu_button("menu_orders_button", token, "orders", style=BUTTON_PRIMARY),
     )
-    keyboard.keyboard.insert(
-        -1,
-        [
-            menu_button("menu_orders_button", token, "orders"),
-            menu_button("menu_account_button", token, "profile"),
-        ],
+    keyboard.row(
+        legacy_button("mm_autodelivery", "ad"),
+        legacy_button("mm_autoresponse", "ar"),
     )
-    keyboard.keyboard.insert(
-        -1,
-        [
-            menu_button("menu_service_button", token, "service"),
-            menu_button("menu_help_button", token, "help"),
-        ],
+    keyboard.row(
+        Button(
+            Localizer().translate("mm_plugins"), callback_data=f"{CBT.PLUGINS_LIST}:0"
+        ),
+        legacy_button("mm_templates", "templates"),
     )
-    keyboard.keyboard.insert(
-        -1,
-        [Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL)],
+    keyboard.row(
+        menu_button("menu_automation_button", token, "automation"),
+        menu_button("menu_settings_button", token, "settings"),
+    )
+    keyboard.row(
+        menu_button("menu_account_button", token, "profile"),
+        menu_button("menu_service_button", token, "service"),
+    )
+    keyboard.row(menu_button("menu_refresh_dashboard", token, "home"))
+    keyboard.row(
+        Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL),
+        Button(Localizer().translate("menu_join_chat"), url=CHAT_URL),
     )
     return keyboard
 

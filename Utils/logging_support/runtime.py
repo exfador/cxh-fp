@@ -50,7 +50,7 @@ class LoggingRuntime:
         self.console = logging.StreamHandler(self.stream)
         self.console.setLevel(logging.INFO)
         self.console.addFilter(ConsoleFilter())
-        self.console.setFormatter(CLILoggerFormatter())
+        self.console.setFormatter(CLILoggerFormatter(stream=self.stream))
         self.file = RecoveringFileHandler(log_path(root), self.warn)
         self.file.setLevel(logging.DEBUG)
         self.file.setFormatter(FileLoggerFormatter())

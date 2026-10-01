@@ -46,6 +46,7 @@ class MenuNavigation:
             message.chat.id,
             text,
             reply_markup=keyboard,
+            disable_web_page_preview=True,
         )
         self.menu_store.update(token, message_id=sent.id)
         navigation = getattr(self, "panel_navigation", None)

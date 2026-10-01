@@ -148,7 +148,9 @@ def init_uploader(cardinal: Cardinal):
             return
         bot.send_message(m.chat.id, "🔁 Проверяю валидность файла...")
         try:
-            new_config = cfg_loader.load_main_config("storage/cache/temp_main.cfg")
+            new_config = cfg_loader.load_main_config(
+                "storage/cache/temp_main.cfg", persist_migrations=False
+            )
         except excs.ConfigParseError as e:
             bot.send_message(
                 m.chat.id,

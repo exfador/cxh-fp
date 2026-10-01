@@ -80,7 +80,7 @@ def menu_page(items, argument):
 
 def cached_orders(cardinal):
     runner = cardinal.runner
-    if runner is None:
+    if runner is None or runner.saved_orders is None:
         return []
     return order_rows(list(runner.saved_orders.values())[:MENU_ORDER_LIMIT])
 
@@ -110,20 +110,20 @@ def cached_chats(cardinal):
 
 def home_text(cardinal):
     translate = Localizer().translate
-    status = translate(
-        "menu_connected" if cardinal.account.is_initiated else "menu_connecting"
-    )
-    status += home_profile_summary(cardinal, translate)
+    if not cardinal.account.is_initiated:
+        return translate("menu_home_connecting", escape(str(cardinal.VERSION)))
+    status = home_profile_summary(cardinal, translate)
     account_name = escape(str(cardinal.account.username or translate("menu_unknown")))
-    return translate(
+    text = translate(
         "menu_home_text",
         cardinal.VERSION,
         account_name,
         status,
         cardinal.account.active_sales or 0,
-        len(cached_lots(cardinal)),
+        len(cached_lots(cardinal)) if cardinal.profile is not None else "—",
         sum(chat.unread for chat in cached_chats(cardinal)),
     )
+    return text
 
 
 def home_profile_summary(cardinal, translate):

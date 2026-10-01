@@ -21,7 +21,9 @@ def arguments(argv=None):
     parser.add_argument(
         "--language", "--lang", choices=("ru", "en"), help="Interface language / Язык"
     )
-    parser.add_argument("--no-color", action="store_true", help="Plain terminal output")
+    colors = parser.add_mutually_exclusive_group()
+    colors.add_argument("--no-color", action="store_true", help="Plain terminal output")
+    colors.add_argument("--color", action="store_true", help="Force ANSI colors")
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument(
         "--check", action="store_true", help="Check Python and platform without changes"
@@ -40,6 +42,12 @@ def preview(console):
         console.step(number, console.text(key))
         if number == 2:
             console.say("botfather", name=PROJECT_NAME, username=BOT_USERNAME_EXAMPLE)
+            console.write("\n" + console.text("preview_events"))
+            console.say("token_checking")
+            console.say("token_timeout")
+            console.say("username_error")
+            console.options(console.text("retry"))
+            console.success("connected", username=BOT_USERNAME_EXAMPLE)
     console.write("\n" + console.text("review"))
     console.say("review_body")
 
@@ -59,6 +67,8 @@ def execute(options, console, root):
     command = [executable, root / "first_setup.py", "--language", console.language]
     if options.no_color:
         command.append("--no-color")
+    elif options.color:
+        command.append("--color")
     run_process(command, root, timeout=None)
     console.say("launch", command="python start.py")
     return 0
@@ -67,7 +77,8 @@ def execute(options, console, root):
 def main(argv=None, console=None, root=PROJECT_ROOT):
     configure_terminal()
     options = arguments(argv)
-    console = console or SetupConsole(color=False if options.no_color else None)
+    color = False if options.no_color else True if options.color else None
+    console = console or SetupConsole(color=color)
     try:
         if options.language:
             console.language = options.language

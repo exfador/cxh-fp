@@ -55,7 +55,7 @@ def update_lots_states(cardinal: Cardinal, event: NewOrderEvent):
                 elif current_task == 1:
                     restored.append(lot.description)
             time.sleep(0.5)
-    if deactivated:
+    if deactivated and cardinal.telegram is not None:
         lots = "\n".join(deactivated)
         text = f"🔴 <b>Деактивировал лоты:</b>\n        \n<code>{lots}</code>"
         Thread(
@@ -64,7 +64,7 @@ def update_lots_states(cardinal: Cardinal, event: NewOrderEvent):
             kwargs={"notification_type": utils.NotificationTypes.lots_deactivate},
             daemon=True,
         ).start()
-    if restored:
+    if restored and cardinal.telegram is not None:
         lots = "\n".join(restored)
         text = f"🟢 <b>Активировал лоты:</b>\n\n<code>{lots}</code>"
         Thread(
@@ -124,6 +124,8 @@ def send_thank_u_message_handler(cardinal: Cardinal, event: OrderStatusChangedEv
 def send_order_confirmed_notification_handler(
     cardinal: Cardinal, event: OrderStatusChangedEvent
 ):
+    if cardinal.telegram is None:
+        return
     if not event.order.status == types.OrderStatuses.CLOSED:
         return
     chat = cardinal.account.get_chat_by_name(event.order.buyer_username)

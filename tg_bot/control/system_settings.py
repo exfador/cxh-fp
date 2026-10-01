@@ -18,7 +18,7 @@ from telebot.types import (
     CallbackQuery,
     InputFile,
 )
-from tg_bot import static_keyboards as skb, keyboards as kb, CBT
+from tg_bot import utils, static_keyboards as skb, keyboards as kb, CBT
 from Utils import cardinal_tools, updater
 import tg_bot.bot as _module_state
 
@@ -62,6 +62,8 @@ class SystemSettings:
         )
 
     def restart_cardinal(self, m: Message):
+        if not self.menu_user_allowed(m.from_user, m.chat):
+            return
         self.bot.send_message(m.chat.id, _module_state._("restarting"))
         cardinal_tools.restart_program()
 
@@ -121,7 +123,7 @@ class SystemSettings:
 
     def act_send_funpay_message(self, c: CallbackQuery):
         split = c.data.split(":")
-        node_id = int(split[1])
+        node_id = utils.parse_chat_id(split[1])
         try:
             username = split[2]
         except IndexError:
@@ -380,7 +382,11 @@ class SystemSettings:
 
     def open_reply_menu(self, c: CallbackQuery):
         split = c.data.split(":")
-        node_id, username, again = (int(split[1]), split[2], int(split[3]))
+        node_id, username, again = (
+            utils.parse_chat_id(split[1]),
+            split[2],
+            int(split[3]),
+        )
         extend = True if len(split) > 4 and int(split[4]) else False
         self.bot.edit_message_reply_markup(
             c.message.chat.id,

@@ -12,6 +12,7 @@ from app.setup.validation import (
     valid_password,
 )
 from Utils.cardinal_tools import validate_proxy, build_proxy, hash_password
+from app.setup.connection_errors import report_bot_error
 
 
 def configure_funpay(config, console):
@@ -59,14 +60,18 @@ def checked_proxy(value):
 
 
 def bot_username(token):
-    return telebot.TeleBot(token).get_me(timeout=settings.NETWORK_TIMEOUT).username
+    result = telebot.apihelper._make_request(
+        token, "getMe", params={"timeout": settings.NETWORK_TIMEOUT}
+    )
+    return telebot.types.User.de_json(result).username
 
 
 def check_bot(token, console, lookup):
+    console.say("token_checking")
     try:
         username = lookup(token)
-    except Exception:
-        console.say("token_error")
+    except Exception as error:
+        report_bot_error(console, error)
         return None
     if not valid_bot_username(username):
         console.say("username_error")
@@ -75,11 +80,12 @@ def check_bot(token, console, lookup):
 
 
 def retry_telegram(config, console):
-    choice = console.choice("retry", ("1", "2", "3"))
+    choice = console.choice("retry", ("1", "2", "3", "4"))
     if choice == "3":
         raise KeyboardInterrupt
     if choice == "2":
         config["Telegram"]["proxy"] = read_proxy(console, set_telebot_proxy=True) or ""
+    return choice
 
 
 def configure_telegram(config, console, lookup=bot_username):
@@ -93,13 +99,14 @@ def configure_telegram(config, console, lookup=bot_username):
             console.text("token_format"),
             secret=True,
         )
-        username = check_bot(token, console, lookup)
-        if username is None:
-            retry_telegram(config, console)
-            continue
-        config["Telegram"].update({"token": token, "enabled": "1"})
-        console.success("connected", username=username)
-        return
+        while True:
+            username = check_bot(token, console, lookup)
+            if username is not None:
+                config["Telegram"].update({"token": token, "enabled": "1"})
+                console.success("connected", username=username)
+                return
+            if retry_telegram(config, console) == "1":
+                break
 
 
 def configure_password(config, console):

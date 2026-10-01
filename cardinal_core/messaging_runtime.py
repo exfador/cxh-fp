@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from FunPayAPI import types
 from app.outgoing_messages import prepare_outgoing_message
+from cardinal_core.message_results import MessageSendFailure
 
 if TYPE_CHECKING:
     pass
@@ -111,7 +112,7 @@ class MessagingRuntime:
                 _module_state.logger.error(
                     _module_state._("crd_msg_no_more_attempts_err", chat_id)
                 )
-                return []
+                return MessageSendFailure(result)
         return result
 
     def get_exchange_rate(
@@ -236,11 +237,10 @@ class MessagingRuntime:
                     continue
                 next_time = self.raise_lots()
                 delay = next_time - int(time.time())
-                if delay <= 0:
-                    continue
-                time.sleep(delay)
-            except:
+                time.sleep(max(1, delay))
+            except Exception:
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
+                time.sleep(10)
 
     def update_session_loop(self):
         _module_state.logger.info(_module_state._("crd_session_loop_started"))
@@ -269,6 +269,10 @@ class MessagingRuntime:
             ]:
                 self.add_handlers_from_plugin(module)
         self.run_handlers(self.pre_init_handlers, (self,))
+        self._Cardinal__init_account()
+        self.runner = FunPayAPI.Runner(self.account, self.old_mode_enabled)
+        self._Cardinal__update_profile()
+        self.run_handlers(self.post_init_handlers, (self,))
         if self.MAIN_CFG["Telegram"].getboolean("enabled"):
             try:
                 self.telegram.setup_commands()
@@ -276,8 +280,4 @@ class MessagingRuntime:
                 _module_state.logger.warning("Произошла ошибка при установке команд.")
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
             Thread(target=self.telegram.run, daemon=True).start()
-        self._Cardinal__init_account()
-        self.runner = FunPayAPI.Runner(self.account, self.old_mode_enabled)
-        self._Cardinal__update_profile()
-        self.run_handlers(self.post_init_handlers, (self,))
         return self

@@ -99,7 +99,7 @@ class MenuTrading:
         if not self.menu_store.begin_read(token):
             return
         try:
-            _, orders = self.cardinal.account.get_sales()
+            _, orders, _, _ = self.cardinal.account.get_sales()
             self.menu_store.update(token, orders=tuple(order_rows(orders)))
             self.menu_orders(call, token, 0)
         finally:

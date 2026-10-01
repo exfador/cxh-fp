@@ -2,7 +2,7 @@
 
 This folder controls the bot photo and profile text. Changes apply automatically at the next bot start.
 
-The profile name is CXH FP. The fox is the bot mascot; Russian and English descriptions start with 🦊 CXH FP. The project channel remains @funpay_coxerhub and the developer contact remains @coxerhub.
+The profile name is CXH FP. The fox is the bot mascot; Russian and English descriptions start with 🦊 CXH FP. The project channel is @funpay_coxerhub, the community chat is @coxerhub_ch, and the developer contact is @coxerhub.
 
 | File | Purpose |
 | --- | --- |

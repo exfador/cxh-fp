@@ -19,6 +19,7 @@ MESSAGE_CONFIG_FIELDS = frozenset(
 )
 DEVELOPER_URL = "https://t.me/coxerhub"
 CHANNEL_URL = "https://t.me/funpay_coxerhub"
+CHAT_URL = "https://t.me/coxerhub_ch"
 DEFAULT_MESSAGE_SIGNATURE = (
     f"{BRAND_SIGNATURE} — магазин FunPay.\n"
     f"Канал: {CHANNEL_URL}\n"

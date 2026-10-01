@@ -20,7 +20,7 @@ class OrderInterface:
     def extend_new_message_notification(self, c: CallbackQuery):
         chat_id, username = c.data.split(":")[1:]
         try:
-            chat = self.cardinal.account.get_chat(int(chat_id))
+            chat = self.cardinal.account.get_chat(utils.parse_chat_id(chat_id))
         except:
             self.bot.answer_callback_query(c.id)
             self.bot.send_message(c.message.chat.id, _module_state._("get_chat_error"))
@@ -33,12 +33,16 @@ class OrderInterface:
             text,
             c.message.chat.id,
             c.message.id,
-            reply_markup=kb.reply(int(chat_id), username, False, False),
+            reply_markup=kb.reply(utils.parse_chat_id(chat_id), username, False, False),
         )
 
     def ask_confirm_refund(self, call: CallbackQuery):
         split = call.data.split(":")
-        order_id, node_id, username = (split[1], int(split[2]), split[3])
+        order_id, node_id, username = (
+            split[1],
+            utils.parse_chat_id(split[2]),
+            split[3],
+        )
         keyboard = kb.new_order(order_id, username, node_id, confirmation=True)
         self.bot.edit_message_reply_markup(
             call.message.chat.id, call.message.id, reply_markup=keyboard
@@ -47,7 +51,11 @@ class OrderInterface:
 
     def cancel_refund(self, call: CallbackQuery):
         split = call.data.split(":")
-        order_id, node_id, username = (split[1], int(split[2]), split[3])
+        order_id, node_id, username = (
+            split[1],
+            utils.parse_chat_id(split[2]),
+            split[3],
+        )
         keyboard = kb.new_order(order_id, username, node_id)
         self.bot.edit_message_reply_markup(
             call.message.chat.id, call.message.id, reply_markup=keyboard
@@ -56,7 +64,11 @@ class OrderInterface:
 
     def refund(self, c: CallbackQuery):
         split = c.data.split(":")
-        order_id, node_id, username = (split[1], int(split[2]), split[3])
+        order_id, node_id, username = (
+            split[1],
+            utils.parse_chat_id(split[2]),
+            split[3],
+        )
         new_msg = None
         attempts = 3
         while attempts:
@@ -106,7 +118,7 @@ class OrderInterface:
     def open_order_menu(self, c: CallbackQuery):
         split = c.data.split(":")
         node_id, username, order_id, no_refund = (
-            int(split[1]),
+            utils.parse_chat_id(split[1]),
             split[2],
             split[3],
             bool(int(split[4])),

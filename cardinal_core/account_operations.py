@@ -105,23 +105,22 @@ class AccountOperations:
         self.telegram.init()
 
     def get_balance(self, attempts: int = 3) -> FunPayAPI.types.Balance:
-        subcategories = self.account.get_sorted_subcategories()[
-            FunPayAPI.enums.SubCategoryTypes.COMMON
-        ]
+        subcategories = self.account.get_sorted_subcategories().get(
+            FunPayAPI.enums.SubCategoryTypes.COMMON, {}
+        )
         lots = []
-        while not lots and attempts:
+        while not lots and attempts > 0 and subcategories:
             attempts -= 1
             subcat_id = random.choice(list(subcategories.keys()))
             lots = self.account.get_subcategory_public_lots(
                 FunPayAPI.enums.SubCategoryTypes.COMMON, subcat_id
             )
-            break
-        else:
-            raise Exception(...)
+        if not lots:
+            raise ValueError("No public lots available to retrieve the balance")
         balance = self.account.get_balance(random.choice(lots).id)
         return balance
 
-    def raise_lots(self) -> int:
+    def raise_lots(self) -> float:
         next_call = float("inf")
         for subcat in sorted(
             list(self.curr_profile.get_sorted_lots(2).keys()),
@@ -203,7 +202,7 @@ class AccountOperations:
                     self.post_lots_raise_handlers,
                     (self, subcat.category, error_text + time_delta),
                 )
-        return next_call if next_call < float("inf") else 10
+        return next_call if next_call < float("inf") else time.time() + 10
 
     def get_order_from_object(
         self,

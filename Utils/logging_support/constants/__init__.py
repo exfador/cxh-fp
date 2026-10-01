@@ -48,11 +48,14 @@ ROTATED_PATTERN = re.compile(r"log\.log\.?\d+\Z")
 ARCHIVED_PATTERN = re.compile(r"log\.\d+\.log\Z")
 LEVEL_COLORS = {
     "DEBUG": "\033[90m",
-    "INFO": "\033[36m",
-    "WARNING": "\033[33m",
-    "ERROR": "\033[31m",
-    "CRITICAL": "\033[31m",
+    "INFO": "\033[96m",
+    "WARNING": "\033[93m",
+    "ERROR": "\033[91m",
+    "CRITICAL": "\033[1;91m",
 }
+CONSOLE_TIME_COLOR = "\033[90m"
+CONSOLE_SOURCE_COLOR = "\033[94m"
+CONSOLE_TEXT_COLOR = "\033[97m"
 COLOR_RESET = "\033[0m"
 DETAILS_MESSAGE = "Diagnostic payload saved to logs/log.log"
 LOG_FAILURE_MESSAGE = (

@@ -148,3 +148,5 @@ gf_linked_err = "<code>storage/products/{}</code> is still linked to offers. Unl
 gf_deleting_err = (
     "Could not delete <code>storage/products/{}</code>. Check folder permissions."
 )
+
+ntfc_new_order_not_paid = "Delivery skipped: the order is not in Paid status."

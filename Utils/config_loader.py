@@ -56,11 +56,11 @@ def create_config_obj(config_path: str) -> ConfigParser:
     return config
 
 
-def load_main_config(config_path: str):
+def load_main_config(config_path: str, persist_migrations: bool = True):
     config = create_config_obj(config_path)
-    migrate_removed_language(config, config_path)
-    if migrate_brand_signature(config):
-        write_config(config, config_path)
+    original = {section: dict(config[section]) for section in config.sections()}
+    migrate_removed_language(config)
+    migrate_brand_signature(config)
     values = {
         "FunPay": {
             "golden_key": "any",
@@ -134,8 +134,6 @@ def load_main_config(config_path: str):
             raise ConfigParseError(config_path, section_name, SectionNotFoundError())
         if section_name == "Greetings" and "cacheInitChats" in config[section_name]:
             config.remove_option(section_name, "cacheInitChats")
-            with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                config.write(f)
         for param_name in values[section_name]:
             if (
                 section_name == "FunPay"
@@ -143,72 +141,54 @@ def load_main_config(config_path: str):
                 and (param_name not in config[section_name])
             ):
                 config.set("FunPay", "oldMsgGetMode", "0")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Greetings"
                 and param_name == "ignoreSystemMessages"
                 and (param_name not in config[section_name])
             ):
                 config.set("Greetings", "ignoreSystemMessages", "0")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Other"
                 and param_name == "language"
                 and (param_name not in config[section_name])
             ):
                 config.set("Other", "language", "ru")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Other"
                 and param_name == "language"
                 and (config[section_name][param_name] == "eng")
             ):
                 config.set("Other", "language", "en")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Greetings"
                 and param_name == "greetingsCooldown"
                 and (param_name not in config[section_name])
             ):
                 config.set("Greetings", "greetingsCooldown", "2")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "OrderConfirm"
                 and param_name == "watermark"
                 and (param_name not in config[section_name])
             ):
                 config.set("OrderConfirm", "watermark", "1")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "FunPay"
                 and param_name == "keepSentMessagesUnread"
                 and (param_name not in config[section_name])
             ):
                 config.set("FunPay", "keepSentMessagesUnread", "0")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "NewMessageView"
                 and param_name == "showImageName"
                 and (param_name not in config[section_name])
             ):
                 config.set("NewMessageView", "showImageName", "1")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Telegram"
                 and param_name == "blockLogin"
                 and (param_name not in config[section_name])
             ):
                 config.set("Telegram", "blockLogin", "0")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Telegram"
                 and param_name == "secretKeyHash"
@@ -220,30 +200,24 @@ def load_main_config(config_path: str):
                     hash_password(config[section_name]["secretKey"]),
                 )
                 config.remove_option(section_name, "secretKey")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "FunPay"
                 and param_name == "locale"
                 and (param_name not in config[section_name])
             ):
                 config.set(section_name, "locale", "ru")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Greetings"
                 and param_name == "onlyNewChats"
                 and (param_name not in config[section_name])
             ):
                 config.set("Greetings", "onlyNewChats", "0")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Proxy"
                 and param_name == "proxy"
                 and (param_name not in config[section_name])
             ):
-                if config["Proxy"]["ip"] and config["Proxy"]["port"]:
+                if not (config["Proxy"]["ip"] and config["Proxy"]["port"]):
                     config.set("Proxy", "proxy", "")
                 else:
                     config.set(
@@ -261,16 +235,12 @@ def load_main_config(config_path: str):
                 config.remove_option(section_name, "password")
                 config.remove_option(section_name, "ip")
                 config.remove_option(section_name, "port")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif (
                 section_name == "Telegram"
                 and param_name == "proxy"
                 and (param_name not in config[section_name])
             ):
                 config.set("Telegram", "proxy", "")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             try:
                 if values[section_name][param_name] == "any":
                     check_param(param_name, config[section_name])
@@ -284,6 +254,10 @@ def load_main_config(config_path: str):
                     )
             except (ParamNotFoundError, EmptyValueError, ValueNotValidError) as e:
                 raise ConfigParseError(config_path, section_name, e)
+    if persist_migrations and original != {
+        section: dict(config[section]) for section in config.sections()
+    }:
+        write_config(config, config_path)
     return config
 
 

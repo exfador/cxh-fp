@@ -14,9 +14,12 @@ def arguments(argv=None):
     parser.add_argument(
         "--version", action="version", version=f"{PROJECT_NAME} {VERSION}"
     )
+    parser.add_argument("--color", action="store_true", help="Enable console colors")
+    parser.add_argument("--no-color", action="store_true", help="Plain console output")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("run", help="Запустить бот / Start bot")
     commands.add_parser("status", help="Локальные файлы и журналы / Local status")
+    commands.add_parser("preview", help="Предпросмотр журнала без запуска бота")
     logs = commands.add_parser("logs", help="Последние записи / Recent log entries")
     logs.add_argument("--lines", type=int, default=DEFAULT_TAIL_LINES)
     backup = commands.add_parser("backup", help="Резервная копия / Backup")
@@ -71,11 +74,21 @@ def backup_command(root, action):
 def main(argv=None, root=PROJECT_ROOT):
     configure_terminal()
     options = arguments(argv)
+    from app.terminal_colors import color_arguments
+
+    color_arguments(
+        (["--color"] if options.color else [])
+        + (["--no-color"] if options.no_color else [])
+    )
     if options.command in (None, "run"):
         from app.bootstrap import main as run
 
         return run()
     try:
+        if options.command == "preview":
+            from app.console_preview import preview
+
+            return preview()
         if options.command == "status":
             return show_status(root)
         if options.command == "logs":

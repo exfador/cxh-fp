@@ -19,7 +19,10 @@ def send_new_order_notification_handler(c: Cardinal, e: NewOrderEvent, *args):
         "blockNewOrderNotification"
     ):
         return
-    if not (config_obj := getattr(e, "config_section_obj")):
+    config_obj = getattr(e, "config_section_obj")
+    if e.order.status is not OrderStatuses.PAID:
+        delivery_info = _module_state._("ntfc_new_order_not_paid")
+    elif not config_obj:
         delivery_info = _module_state._("ntfc_new_order_not_in_cfg")
     elif not c.autodelivery_enabled:
         delivery_info = _module_state._("ntfc_new_order_ad_disabled")
@@ -94,7 +97,18 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
             "error_text",
             f"Не удалось отправить сообщение с товаром для заказа {e.order.id}.",
         )
-        if file_name and products:
+        if getattr(result, "sent_messages", ()):
+            setattr(e, "delivery_partial", True)
+            setattr(e, "delivery_text", delivery_text)
+            setattr(e, "goods_left", goods_left)
+            setattr(
+                e,
+                "error_text",
+                f"Сообщение для заказа {e.order.id} отправлено частично. "
+                "Товары не возвращены в остаток. Проверьте переписку с покупателем.",
+            )
+            _module_state.logger.error(e.error_text)
+        elif file_name and products:
             cardinal_tools.add_products(
                 f"storage/products/{file_name}", products, at_zero_position=True
             )
@@ -107,6 +121,8 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
 
 
 def deliver_product_handler(c: Cardinal, e: NewOrderEvent, *args) -> None:
+    if e.order.status is not OrderStatuses.PAID:
+        return
     if not c.MAIN_CFG["FunPay"].getboolean("autoDelivery"):
         return
     if e.order.buyer_username in c.blacklist and c.bl_delivery_enabled:

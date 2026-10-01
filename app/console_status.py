@@ -1,6 +1,17 @@
 import logging
+import sys
 
 from app.constants.console import STATUS_TEXT
+
+
+def runtime_banner():
+    from app.setup.terminal import SetupConsole
+    from app.terminal_colors import supports_color
+
+    SetupConsole(
+        writer=lambda line: print(line, file=sys.stderr),
+        color=supports_color(sys.stderr),
+    ).banner("Журнал работы / Runtime log")
 
 
 def account_summary(cardinal):

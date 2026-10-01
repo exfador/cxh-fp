@@ -6,7 +6,7 @@
 <p align="center"><b>Ваш магазин FunPay — в Telegram.</b><br>Заказы, покупатели, цены и выдача. Всё через кнопки.</p>
 
 <p align="center">
-  <a href="https://github.com/exfador/cxh-fp/releases"><img src="https://img.shields.io/badge/version-1.1.2-32d2bd?style=flat-square" alt="Версия 1.1.2"></a>
+  <a href="https://github.com/exfador/cxh-fp/releases"><img src="https://img.shields.io/badge/version-1.1.3-32d2bd?style=flat-square" alt="Версия 1.1.3"></a>
   <img src="https://img.shields.io/badge/Python-3.11-60a5fa?style=flat-square" alt="Python 3.11">
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0b152b?style=flat-square" alt="Windows, Linux, macOS">
 </p>
@@ -47,7 +47,7 @@
 
 ## 🎛 Панель без лишних команд
 
-- **Две команды:** `/start` и `/menu` открывают профиль и разделы магазина.
+- **Команды:** `/start` и `/menu` открывают профиль и разделы магазина, `/restart` перезапускает бот. Команды загруженных плагинов также появляются в меню Telegram.
 - **Одна карточка:** при переходах меню редактируется, а не засоряет чат новыми сообщениями. «Назад» возвращает к предыдущему экрану.
 - **Короткие кнопки:** понятные названия, обычные эмодзи и немного цвета для основных действий.
 - **Два языка:** русский и английский. Язык выбирается в установщике и меняется в панели.

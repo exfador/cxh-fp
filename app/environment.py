@@ -33,7 +33,7 @@ def prepare_environment() -> None:
     for filename in (RESPONSE_CONFIG, DELIVERY_CONFIG):
         if not (root / filename).exists():
             (root / filename).touch(exist_ok=False)
-    colorama.init()
+    colorama.just_fix_windows_console()
     configure_logging()
     write_service_pid()
 

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 import bcrypt
 import requests
 from locales.localizer import Localizer
+from Utils.products_storage import write_products
 
 if TYPE_CHECKING:
     from cardinal import Cardinal
@@ -247,6 +248,8 @@ def get_month_name(month_number: int) -> str:
 
 
 def get_products(path: str, amount: int = 1) -> list[list[str] | int] | None:
+    if not isinstance(amount, int) or isinstance(amount, bool) or amount < 1:
+        raise ValueError("Product amount must be a positive integer")
     with get_products_file_lock(path):
         with open(path, "r", encoding="utf-8") as f:
             products = f.read()
@@ -259,21 +262,22 @@ def get_products(path: str, amount: int = 1) -> list[list[str] | int] | None:
         got_products = products[:amount]
         save_products = products[amount:]
         amount = len(save_products)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write("\n".join(save_products))
+        write_products(path, "\n".join(save_products))
         return [got_products, amount]
 
 
 def add_products(path: str, products: list[str], at_zero_position=False):
     with get_products_file_lock(path):
-        if not at_zero_position:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write("\n" + "\n".join(products))
-        else:
+        text = ""
+        if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 text = f.read()
-            with open(path, "w", encoding="utf-8") as f:
-                f.write("\n".join(products) + "\n" + text)
+        elif at_zero_position:
+            raise FileNotFoundError(path)
+        content = "\n".join(products)
+        write_products(
+            path, content + "\n" + text if at_zero_position else text + "\n" + content
+        )
 
 
 def safe_text(text: str):

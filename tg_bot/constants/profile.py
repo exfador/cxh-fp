@@ -1,4 +1,4 @@
-from app.constants.branding import BRAND_SIGNATURE, DEVELOPER_URL
+from app.constants.branding import BRAND_SIGNATURE, CHAT_URL, DEVELOPER_URL
 from app.constants.runtime import VERSION
 
 PROFILE_LANGUAGES = ("", "ru", "en", "uk")
@@ -22,6 +22,9 @@ PROFILE_DESCRIPTIONS = {
     "en": f"{BRAND_SIGNATURE} · {VERSION}\n\nYour FunPay store in Telegram.\n\n📦 Offers, prices and delivery\n🧾 Orders and buyer messages\n💬 Replies, reviews and templates\n🧩 Store plugins\n\nStart with /start or /menu\n\n📣 Channel: @funpay_coxerhub\n{PROFILE_CHANNEL_URL}\n👤 Developer and contact: @coxerhub\n{DEVELOPER_URL}",
     "uk": "",
 }
+for _language in ("", "ru", "en"):
+    _chat_label = "Chat" if _language == "en" else "Наш чат"
+    PROFILE_DESCRIPTIONS[_language] += f"\n💬 {_chat_label}: {CHAT_URL}"
 PROFILE_SHORT_DESCRIPTION = f"Лоты, заказы и выдача на FunPay.\nКанал: {PROFILE_CHANNEL_URL}\nСвязь: {DEVELOPER_URL}"
 PROFILE_SHORT_DESCRIPTION_EN = f"FunPay offers, orders and delivery.\nChannel: {PROFILE_CHANNEL_URL}\nContact: {DEVELOPER_URL}"
 PROFILE_TEXT_LIMIT_BYTES = 4096

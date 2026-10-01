@@ -162,3 +162,5 @@ gf_linked_err = "Файл <code>storage/products/{}</code> использует�
 gf_deleting_err = (
     "Не удалось удалить <code>storage/products/{}</code>. Попробуйте ещё раз."
 )
+
+ntfc_new_order_not_paid = "Выдача пропущена: заказ не находится в статусе «Оплачен»."

@@ -54,7 +54,7 @@ def init_templates_cp(cardinal: Cardinal, *args):
         split = c.data.split(":")
         offset, node_id, username, prev_page, extra = (
             int(split[1]),
-            int(split[2]),
+            utils.parse_chat_id(split[2]),
             split[3],
             int(split[4]),
             split[5:],
@@ -150,7 +150,7 @@ def init_templates_cp(cardinal: Cardinal, *args):
         split = c.data.split(":")
         template_index, node_id, username, prev_page, extra = (
             int(split[1]),
-            int(split[2]),
+            utils.parse_chat_id(split[2]),
             split[3],
             int(split[4]),
             split[5:],

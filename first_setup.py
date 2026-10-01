@@ -1,8 +1,6 @@
 from configparser import ConfigParser
 from pathlib import Path
 
-import telebot
-
 from app.constants.runtime import MAIN_CONFIG, RESPONSE_CONFIG, DELIVERY_CONFIG
 from app.setup.defaults import default_config
 from app.setup.steps import (
@@ -11,7 +9,9 @@ from app.setup.steps import (
     configure_password,
     configure_funpay_proxy,
     read_proxy,
+    bot_username,
 )
+from app.setup.connection_errors import report_bot_error
 from app.setup.storage import write_setup_config
 from app.setup.terminal import SetupConsole
 from app.console_encoding import configure_terminal
@@ -47,10 +47,11 @@ def setup_telegram_proxy():
     console.banner()
     while True:
         proxy = read_proxy(console, set_telebot_proxy=True)
+        console.say("token_checking")
         try:
-            username = telebot.TeleBot(config["Telegram"]["token"]).get_me().username
-        except Exception:
-            console.say("token_error")
+            username = bot_username(config["Telegram"]["token"])
+        except Exception as error:
+            report_bot_error(console, error)
             continue
         config["Telegram"]["proxy"] = proxy or ""
         write_setup_config(config, MAIN_CONFIG, replace=True)
@@ -93,12 +94,13 @@ def main():
     configure_terminal()
     parser = argparse.ArgumentParser()
     parser.add_argument("--language", choices=("ru", "en"))
-    parser.add_argument("--no-color", action="store_true")
+    colors = parser.add_mutually_exclusive_group()
+    colors.add_argument("--no-color", action="store_true")
+    colors.add_argument("--color", action="store_true")
     options = parser.parse_args()
     os.chdir(PROJECT_ROOT)
-    console = SetupConsole(
-        language=options.language or "ru", color=False if options.no_color else None
-    )
+    color = False if options.no_color else True if options.color else None
+    console = SetupConsole(language=options.language or "ru", color=color)
     try:
         first_setup(options.language, console)
         return 0

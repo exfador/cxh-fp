@@ -4,7 +4,7 @@ import json
 import shutil
 import textwrap
 
-from app.setup.terminal import supports_color
+from app.terminal_colors import supports_color
 from Utils.logging_support.constants import (
     COLOR_PATTERN,
     MARKER_PATTERN,
@@ -21,6 +21,9 @@ from Utils.logging_support.constants import (
     FILE_FORMAT,
     FILE_DATE_FORMAT,
     LEVEL_COLORS,
+    CONSOLE_TIME_COLOR,
+    CONSOLE_SOURCE_COLOR,
+    CONSOLE_TEXT_COLOR,
     COLOR_RESET,
     DETAILS_MESSAGE,
 )
@@ -67,9 +70,9 @@ class ConsoleFilter(logging.Filter):
 
 
 class CLILoggerFormatter(logging.Formatter):
-    def __init__(self, color=None):
+    def __init__(self, color=None, stream=None):
         super().__init__()
-        self.color = supports_color() if color is None else color
+        self.color = supports_color(stream) if color is None else color
 
     def format(self, record):
         message = safe_message(record)
@@ -80,11 +83,46 @@ class CLILoggerFormatter(logging.Formatter):
             CONSOLE_MIN_WIDTH,
             min(shutil.get_terminal_size().columns, CONSOLE_MAX_WIDTH),
         )
-        message = textwrap.shorten(message, width=width, placeholder=" …")
         level = record.levelname.replace("WARNING", "WARN")
-        text = f"{self.formatTime(record, CONSOLE_DATE_FORMAT)}  {level:<5}  {message}"
-        color = LEVEL_COLORS.get(record.levelname, "") if self.color else ""
-        return f"{color}{text}{COLOR_RESET if color else ''}"
+        timestamp = self.formatTime(record, CONSOLE_DATE_FORMAT)
+        source = self.source(record.name)
+        prefix = f"  {timestamp}  {level:<8}  {source:<8} │ "
+        lines = textwrap.wrap(message, width=max(12, width - len(prefix))) or [""]
+        header = (
+            "  "
+            + self.paint(timestamp, CONSOLE_TIME_COLOR)
+            + "  "
+            + self.paint(f"{level:<8}", LEVEL_COLORS.get(record.levelname, ""))
+            + "  "
+            + self.paint(f"{source:<8}", CONSOLE_SOURCE_COLOR)
+            + self.paint(" │ ", CONSOLE_TIME_COLOR)
+        )
+        body_color = (
+            LEVEL_COLORS.get(record.levelname, CONSOLE_TEXT_COLOR)
+            if record.levelno >= logging.WARNING
+            else CONSOLE_TEXT_COLOR
+        )
+        continuation = " " * (len(prefix) - 2) + self.paint("│ ", CONSOLE_TIME_COLOR)
+        return "\n".join(
+            (header if index == 0 else continuation) + self.paint(line, body_color)
+            for index, line in enumerate(lines)
+        )
+
+    def paint(self, text, color):
+        return f"{color}{text}{COLOR_RESET}" if self.color and color else text
+
+    @staticmethod
+    def source(name):
+        normalized = name.casefold()
+        if "telegram" in normalized or "tgbot" in normalized or "telebot" in normalized:
+            return "TELEGRAM"
+        if "plugin" in normalized or normalized.startswith("fpc."):
+            return "PLUGIN"
+        if "funpay" in normalized or "runner" in normalized:
+            return "FUNPAY"
+        if "update" in normalized:
+            return "UPDATE"
+        return "SYSTEM"
 
 
 class FileLoggerFormatter(logging.Formatter):

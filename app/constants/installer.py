@@ -5,7 +5,7 @@ PYTHON_PATHS = {"win32": ("Scripts", "python.exe"), "posix": ("bin", "python")}
 PROCESS_TIMEOUT = 1200
 PROBE_TIMEOUT = 15
 PYTHON_PROBE = "import sys; raise SystemExit(sys.version_info[:2] != (3, 11))"
-TERMINAL_WIDTH = 72
+TERMINAL_WIDTH = 88
 MINIMUM_WIDTH = 24
 ANSI_CYAN = "\033[36m"
 ANSI_GREEN = "\033[32m"
