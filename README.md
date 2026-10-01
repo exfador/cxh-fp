@@ -83,7 +83,7 @@ python3.11 start.py
 
 ### ⚡ Автоустановка на Ubuntu
 
-Для Ubuntu **22.04 / 24.04 LTS**, x86_64 и ARM64:
+Для Ubuntu **20.04 / 22.04 / 24.04 LTS**, x86_64 и ARM64:
 
 ```sh
 curl -fSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/exfador/install-cxh-fp/refs/heads/main/install_cxh_fp.sh -o cxh-fp.sh && sudo bash cxh-fp.sh
