@@ -3,6 +3,9 @@ import logging
 import json
 import shutil
 import textwrap
+import re
+
+from urllib3.exceptions import ReadTimeoutError, ConnectTimeoutError
 
 from app.terminal_colors import supports_color
 from Utils.logging_support.constants import (
@@ -59,6 +62,30 @@ def has_payload(message):
     return False
 
 
+def network_retry_message(record):
+    if (
+        record.name != "urllib3.connectionpool"
+        or not str(record.msg).startswith("Retrying (")
+        or not isinstance(record.args, tuple)
+        or len(record.args) != 3
+    ):
+        return None
+    error = record.args[1]
+    host = getattr(getattr(error, "pool", None), "host", None)
+    host = (
+        host
+        if isinstance(host, str) and re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host)
+        else "сервер"
+    )
+    if isinstance(error, ReadTimeoutError):
+        reason = "не ответил за отведённое время"
+    elif isinstance(error, ConnectTimeoutError):
+        reason = "недоступен: не удалось установить соединение"
+    else:
+        reason = "соединение прервано"
+    return f"{host}: {reason}. Повторяю запрос. Подробности: logs/log.log"
+
+
 class ConsoleFilter(logging.Filter):
     def filter(self, record):
         if record.levelno < logging.INFO:
@@ -75,7 +102,11 @@ class CLILoggerFormatter(logging.Formatter):
         self.color = supports_color(stream) if color is None else color
 
     def format(self, record):
-        message = safe_message(record)
+        message = clean_text(
+            getattr(record, "console_summary", None)
+            or network_retry_message(record)
+            or safe_message(record)
+        )
         if has_payload(message):
             message = DETAILS_MESSAGE
         message = " ".join(message.split())
@@ -122,6 +153,8 @@ class CLILoggerFormatter(logging.Formatter):
             return "FUNPAY"
         if "update" in normalized:
             return "UPDATE"
+        if normalized.startswith("urllib3"):
+            return "NETWORK"
         return "SYSTEM"
 
 

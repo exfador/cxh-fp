@@ -1,13 +1,12 @@
 from __future__ import annotations
 from cardinal_core.plugin_loading.loader import PluginLoader
 from cardinal_core.plugin_loading.constants import PLUGIN_DIRECTORY
+from cardinal_core.plugin_loading.diagnostics import error_summary
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     pass
-import Utils.exceptions
 from uuid import UUID
-import importlib.util
 import configparser
 import time
 import sys
@@ -104,8 +103,12 @@ class PluginLifecycle:
                 plugin, data = PluginLoader(
                     PLUGIN_DIRECTORY, set(self.disabled_plugins)
                 ).load(file)
-            except:
-                _module_state.logger.error(_module_state._("crd_plugin_load_err", file))
+            except BaseException as error:
+                _module_state.logger.error(
+                    "%s %s",
+                    _module_state._("crd_plugin_load_err", file),
+                    error_summary(error),
+                )
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
                 continue
             if not self.is_uuid_valid(data["UUID"]):

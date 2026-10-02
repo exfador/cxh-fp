@@ -48,7 +48,12 @@ class UpdateService:
                 self.check()
                 self.notify()
             except Exception as error:
-                self.logger.warning("Release check failed: %s", type(error).__name__)
+                self.logger.warning(
+                    "Не удалось проверить обновления: %s: %s",
+                    type(error).__name__,
+                    error,
+                )
+                self.logger.debug("Release check traceback", exc_info=True)
             self.stop_event.wait(settings.UPDATE_POLL_SECONDS)
 
     def check(self):

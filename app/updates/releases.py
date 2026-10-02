@@ -5,7 +5,7 @@ from app.constants.update_runtime import (
     UPDATE_MANIFEST_ASSET,
     UPDATE_RELEASE_API,
 )
-from app.updates.manifest import verify_envelope
+from app.updates.manifest import verify_envelope, version_tuple
 from app.updates.transport import fetch_release_json
 
 
@@ -30,7 +30,10 @@ def latest_release(repository, public_key, current_version, fetch=fetch_release_
     release = fetch(UPDATE_RELEASE_API.format(repository))
     if release.get("draft") is not False or release.get("prerelease") is not False:
         return None
-    if release.get("tag_name") in (f"v{current_version}", current_version):
+    tag = release.get("tag_name")
+    if not isinstance(tag, str):
+        raise ValueError("Release tag is missing or invalid")
+    if version_tuple(tag.removeprefix("v")) <= version_tuple(current_version):
         return None
     envelope_url = release_asset(release, UPDATE_MANIFEST_ASSET, repository)
     envelope = fetch(envelope_url)

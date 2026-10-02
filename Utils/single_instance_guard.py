@@ -1,3 +1,4 @@
+import errno
 import os
 from pathlib import Path
 from typing import BinaryIO
@@ -16,9 +17,14 @@ class SingleInstanceGuard:
         cls._prepare_lock_byte(lock_handle)
         try:
             cls._lock(lock_handle)
-        except OSError:
+        except OSError as error:
             lock_handle.close()
-            raise SystemExit(0) from None
+            if error.errno not in {errno.EACCES, errno.EAGAIN}:
+                raise
+            raise SystemExit(
+                "CXH FP уже запущен из этой папки. Используйте работающего бота или "
+                "остановите его перед повторным запуском. / CXH FP is already running."
+            ) from None
         cls._lock_handle = lock_handle
 
     @classmethod

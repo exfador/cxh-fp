@@ -16,6 +16,7 @@ from Utils.logging_support.formatters import (
     ConsoleFilter,
     CLILoggerFormatter,
     FileLoggerFormatter,
+    network_retry_message,
     safe_message,
 )
 
@@ -28,6 +29,7 @@ class SafeQueueHandler(logging.handlers.QueueHandler):
 
     def prepare(self, record):
         cloned = copy.copy(record)
+        cloned.console_summary = network_retry_message(record)
         cloned.msg, cloned.args = safe_message(record), ()
         cloned.exc_text = None
         return cloned

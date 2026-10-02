@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 import datetime
 import random
 import time
+import requests
 import FunPayAPI
 from FunPayAPI import utils as fp_utils
 from Utils import cardinal_tools
@@ -37,6 +38,12 @@ class AccountOperations:
             ) as e:
                 _module_state.logger.error(e.short_str())
                 _module_state.logger.debug(f"TRACEBACK {e.short_str()}")
+            except requests.RequestException as error:
+                _module_state.logger.error(
+                    "Не удалось подключиться к FunPay: %s. Проверьте доступность funpay.com; подробности в logs/log.log.",
+                    type(error).__name__,
+                )
+                _module_state.logger.debug("FunPay connection traceback", exc_info=True)
             except:
                 _module_state.logger.error(
                     _module_state._("crd_acc_get_unexpected_err")
