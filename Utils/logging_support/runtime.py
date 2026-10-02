@@ -42,12 +42,17 @@ class SafeQueueHandler(logging.handlers.QueueHandler):
             self.overflow = True
 
 
+class SafeConsoleHandler(logging.StreamHandler):
+    def handleError(self, record):
+        self.setLevel(logging.CRITICAL + 1)
+
+
 class LoggingRuntime:
     def __init__(self, root, stream=None):
         self.stream = stream or sys.stderr
         self.queue = queue.Queue(maxsize=LOG_QUEUE_SIZE)
         self.handler = SafeQueueHandler(self)
-        self.console = logging.StreamHandler(self.stream)
+        self.console = SafeConsoleHandler(self.stream)
         self.console.setLevel(logging.INFO)
         self.console.addFilter(ConsoleFilter())
         self.console.setFormatter(CLILoggerFormatter(stream=self.stream))

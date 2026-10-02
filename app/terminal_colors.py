@@ -33,7 +33,11 @@ def supports_color(stream=None, force=False):
     force = force or preference == "always"
     if not force and ("NO_COLOR" in os.environ or os.getenv("TERM") == "dumb"):
         return False
-    if not getattr(stream, "isatty", lambda: False)():
+    try:
+        interactive = getattr(stream, "isatty", lambda: False)()
+    except (OSError, ValueError):
+        return False
+    if not interactive:
         return force
     return os.name != "nt" or enable_windows_color(stream)
 
