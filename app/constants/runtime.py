@@ -2,7 +2,7 @@ from pathlib import Path
 from app.constants.branding import SERVICE_NAME
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-VERSION = "1.1.6"
+VERSION = "1.1.7"
 MAIN_CONFIG = "configs/_main.cfg"
 DELIVERY_CONFIG = "configs/auto_delivery.cfg"
 RESPONSE_CONFIG = "configs/auto_response.cfg"

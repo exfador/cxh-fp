@@ -5,7 +5,7 @@ from types import ModuleType
 
 from Utils.exceptions import FieldNotExistsError
 from cardinal_core.plugin_loading.constants import PLUGIN_FIELDS, PLACEHOLDER_FLAG
-from cardinal_core.plugin_loading.metadata import read_static_metadata
+from cardinal_core.plugin_loading.metadata import read_static_metadata, validate_uuid
 
 
 class PluginLoader:
@@ -16,12 +16,21 @@ class PluginLoader:
     def load(self, filename: str) -> tuple[ModuleType, dict]:
         path = self._checked_path(filename)
         metadata = read_static_metadata(path)
-        if metadata["UUID"] in self.disabled_uuids:
+        if metadata.get("UUID") in self.disabled_uuids:
             return self._disabled_placeholder(path, metadata)
         module = self._import_module(path)
-        fields = self._module_fields(module, filename)
-        if fields["UUID"] != metadata["UUID"]:
-            raise ValueError("Plugin changed its declared UUID during initialization")
+        try:
+            fields = self._module_fields(module, filename)
+            validate_uuid(fields["UUID"])
+            if "UUID" in metadata and fields["UUID"] != metadata["UUID"]:
+                raise ValueError(
+                    "Plugin changed its declared UUID during initialization"
+                )
+        except BaseException:
+            sys.modules.pop(module.__name__, None)
+            raise
+        if fields["UUID"] in self.disabled_uuids:
+            return self._disabled_placeholder(path, fields)
         return module, fields
 
     def _checked_path(self, filename: str) -> Path:

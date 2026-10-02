@@ -20,7 +20,15 @@ def read_static_metadata(path: Path) -> dict:
                 result[target.id] = ast.literal_eval(node.value)
             except (ValueError, TypeError):
                 continue
-    uuid = result.get("UUID")
-    if not isinstance(uuid, str) or str(UUID(uuid, version=4)) != uuid:
-        raise ValueError("Plugin must declare a static UUID v4")
+    if "UUID" in result:
+        validate_uuid(result["UUID"])
     return result
+
+
+def validate_uuid(value: object) -> None:
+    try:
+        valid = isinstance(value, str) and str(UUID(value, version=4)) == value
+    except ValueError:
+        valid = False
+    if not valid:
+        raise ValueError("Plugin UUID must be a canonical UUID v4 string")

@@ -25,7 +25,7 @@
 /logs
 /storage
 /configs
-/plugins
+/plugins/*
 /build
 /dist
 test.py
