@@ -65,7 +65,7 @@ def home_keyboard(token):
     )
     keyboard.row(
         menu_button("menu_stats_button", token, "stats"),
-        menu_button("menu_refresh_dashboard", token, "home"),
+        menu_button("menu_refresh_dashboard", token, "refresh_home"),
     )
     keyboard.row(
         Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL),
@@ -138,7 +138,7 @@ def service_keyboard(token):
     return keyboard.row(menu_button("menu_home_button", token, "home"))
 
 
-def lots_keyboard(token, lots, page, total):
+def lots_keyboard(token, lots, page, total, searching=False):
     keyboard = Keyboard()
     for lot in lots:
         keyboard.row(
@@ -148,10 +148,10 @@ def lots_keyboard(token, lots, page, total):
             )
         )
     add_menu_pages(keyboard, token, "lots", page, total)
-    keyboard.row(
-        menu_button("menu_search_button", token, "search"),
-        menu_button("menu_all_lots_button", token, "reset_lots"),
-    )
+    search = [menu_button("menu_search_button", token, "search")]
+    if searching:
+        search.append(menu_button("menu_all_lots_button", token, "reset_lots"))
+    keyboard.row(*search)
     keyboard.row(menu_button("menu_refresh_lots_button", token, "refresh_lots"))
     return menu_back(keyboard, token)
 

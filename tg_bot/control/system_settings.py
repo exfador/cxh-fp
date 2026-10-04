@@ -3,6 +3,7 @@ from Utils.logging_support.private_content import private_content_summary
 from tg_bot.constants.process_controls import (
     SHUTDOWN_CONFIRMATION_STATE,
     SHUTDOWN_CONFIRMATION_SECONDS,
+    SYSTEM_CPU_SAMPLE_SECONDS,
 )
 from typing import TYPE_CHECKING
 
@@ -36,31 +37,35 @@ class SystemSettings:
         self.get_backup(m)
         return True
 
-    def send_system_info(self, m: Message):
-        current_time = int(time.time())
-        uptime = current_time - self.cardinal.start_time
+    def system_info_text(self, chat_id):
+        uptime = int(time.time()) - self.cardinal.start_time
         ram = psutil.virtual_memory()
+        process = psutil.Process()
+        process.cpu_percent(None)
+        psutil.cpu_percent(percpu=True)
+        time.sleep(SYSTEM_CPU_SAMPLE_SECONDS)
         cores = psutil.cpu_percent(percpu=True) or [0.0]
+        own_cpu = round(process.cpu_percent(None) / len(cores), 1)
         cpu_usage = _module_state._(
             "sys_cpu_summary",
             round(sum(cores) / len(cores), 1),
             max(cores),
             len(cores),
         )
-        self.bot.send_message(
-            m.chat.id,
-            _module_state._(
-                "sys_info",
-                cpu_usage,
-                psutil.Process().cpu_percent(),
-                ram.total // 1048576,
-                ram.used // 1048576,
-                ram.free // 1048576,
-                psutil.Process().memory_info().rss // 1048576,
-                cardinal_tools.time_to_str(uptime),
-                m.chat.id,
-            ),
+        return _module_state._(
+            "sys_info",
+            cpu_usage,
+            own_cpu,
+            ram.total // 1048576,
+            ram.used // 1048576,
+            ram.free // 1048576,
+            process.memory_info().rss // 1048576,
+            cardinal_tools.time_to_str(uptime),
+            chat_id,
         )
+
+    def send_system_info(self, m: Message):
+        self.bot.send_message(m.chat.id, self.system_info_text(m.chat.id))
 
     def restart_cardinal(self, m: Message):
         if not self.menu_user_allowed(m.from_user, m.chat):

@@ -3,8 +3,9 @@ import inspect
 import secrets
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, replace as replace_dataclass
 from threading import RLock
+from types import SimpleNamespace
 
 import telebot
 from telebot.apihelper import ApiTelegramException
@@ -12,7 +13,7 @@ from telebot.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 
 from locales.localizer import Localizer
 from tg_bot import CBT
-from tg_bot.constants.menu import MENU_NOT_MODIFIED
+from tg_bot.constants.menu import MENU_HOME_ACTIONS, MENU_NOT_MODIFIED
 from tg_bot.constants.panel_history import PANEL_HISTORY_TOKEN_BYTES
 from tg_bot.constants.panel_navigation import (
     PANEL_BACK_ALIASES,
@@ -24,13 +25,17 @@ from tg_bot.constants.panel_navigation import (
     PANEL_LOCK_COUNT,
     PANEL_NATIVE_CALLBACK_ROOTS,
     PANEL_NATIVE_MODULE_ROOTS,
+    PANEL_OUTCOME_NAME,
     PANEL_REMOVE_METHOD,
     PANEL_REPLACE_MENU_ACTIONS,
     PANEL_REPLACE_METHOD,
+    PANEL_REPLACE_OPERATOR_ACTIONS,
+    PANEL_UNCHANGED_NOTICE,
 )
+from tg_bot.constants.operator import OPERATOR_PREFIX
 from tg_bot.constants.plugin_consent import UPLOAD_CONSENT_PREFIX
 from tg_bot.keyboard_appearance import canonical_keyboard, incoming_keyboard
-from tg_bot.panel_history import PanelHistory
+from tg_bot.panel_history import PanelHistory, same_presentation
 
 NATIVE_CBT_ROOTS = frozenset(
     value.split(":", 1)[0]
@@ -75,6 +80,7 @@ class PanelNavigation:
         self.controller = controller
         self.history = history or PanelHistory()
         self.context = ContextVar(PANEL_CONTEXT_NAME, default=None)
+        self.outcome = ContextVar(PANEL_OUTCOME_NAME, default=None)
         self.locks = tuple(RLock() for _ in range(PANEL_LOCK_COUNT))
 
     def process_callback(self, handler, call):
@@ -91,14 +97,34 @@ class PanelNavigation:
             self.is_home(call.data),
             call,
         )
-        with self.locks[hash(panel.key) % PANEL_LOCK_COUNT], self.activate(panel):
-            if not self.history.contains(*panel.key):
-                self.history.begin(
-                    *panel.key,
-                    getattr(call.message, "html_text", None) or call.message.text or "",
-                    incoming_keyboard(call.message),
-                )
-            return handler(call)
+        outcome = self.outcome.set({"native": native_handler(handler), "unchanged": False})
+        try:
+            with self.locks[hash(panel.key) % PANEL_LOCK_COUNT], self.activate(panel):
+                if not self.history.contains(*panel.key):
+                    self.history.begin(
+                        *panel.key,
+                        getattr(call.message, "html_text", None)
+                        or call.message.text
+                        or "",
+                        incoming_keyboard(call.message),
+                    )
+                return handler(call)
+        finally:
+            self.outcome.reset(outcome)
+
+    def unchanged_notice(self, callback_query_id):
+        panel = self.context.get()
+        outcome = self.outcome.get()
+        if (
+            panel is None
+            or panel.callback is None
+            or outcome is None
+            or str(panel.callback.id) != str(callback_query_id)
+            or not outcome["native"]
+            or not outcome["unchanged"]
+        ):
+            return None
+        return Localizer().translate(PANEL_UNCHANGED_NOTICE)
 
     def process_message(self, handler, message):
         if not self.controller.menu_user_allowed(message.from_user, message.chat):
@@ -136,6 +162,8 @@ class PanelNavigation:
             UPLOAD_CONSENT_PREFIX,
         }:
             return True
+        if parts[0] == OPERATOR_PREFIX:
+            return len(parts) > 1 and parts[1] in PANEL_REPLACE_OPERATOR_ACTIONS
         return len(parts) > 2 and parts[2] in PANEL_REPLACE_MENU_ACTIONS
 
     def is_home(self, callback):
@@ -144,7 +172,7 @@ class PanelNavigation:
             callback == CBT.MAIN
             or parts[:2] == ["ops", "home"]
             or len(parts) == 4
-            and parts[2] == "home"
+            and parts[2] in MENU_HOME_ACTIONS
         )
 
     def targets_panel(self, arguments, panel):
@@ -190,12 +218,20 @@ class PanelNavigation:
         payload["reply_markup"] = self.navigation_keyboard(
             canonical, nonce, not panel.home
         )
+        previous = self.history.current(*panel.key)
         try:
             response = execute(telebot.TeleBot.edit_message_text, (), payload, "text")
+            unchanged = previous is not None and same_presentation(
+                previous, SimpleNamespace(text=payload.get("text"), markup=canonical)
+            )
         except ApiTelegramException as error:
             if MENU_NOT_MODIFIED not in error.description.casefold():
                 raise
             response = None
+            unchanged = True
+        outcome = self.outcome.get()
+        if outcome is not None:
+            outcome["unchanged"] = unchanged
         self.record_screen(panel, payload["text"], canonical, nonce, replace)
         return response
 
@@ -273,9 +309,11 @@ class PanelNavigation:
             *panel.key, call.data[len(PANEL_CALLBACK_PREFIX) :]
         )
         if snapshot is None:
-            self.controller.bot.answer_callback_query(
-                call.id, Localizer().translate("menu_expired")
-            )
+            if checkpoint.pages and len(checkpoint.pages.snapshots) > 1:
+                self.controller.bot.answer_callback_query(call.id)
+                return
+            with self.activate(replace_dataclass(panel, home=True)):
+                self.controller.open_home_menu(call)
             return
         self.controller.bot.answer_callback_query(call.id)
         self.restore_screen(panel, snapshot, checkpoint)

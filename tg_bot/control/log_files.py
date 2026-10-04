@@ -27,7 +27,7 @@ def send_logs(controller, message):
         controller.bot.send_message(message.chat.id, translate("logfile_error"))
 
 
-def clear_logs(controller, message):
+def clear_logs_text():
     translate = Localizer().translate
     runtime = current_runtime()
     try:
@@ -39,9 +39,11 @@ def clear_logs(controller, message):
         finally:
             if runtime is not None:
                 runtime.file.release()
-        controller.bot.send_message(
-            message.chat.id, translate("logfile_deleted").format(deleted)
-        )
+        return translate("logfile_deleted").format(deleted)
     except (OSError, ValueError):
         logging.getLogger("TGBot").exception("Could not clear archived logs")
-        controller.bot.send_message(message.chat.id, translate("logfile_error"))
+        return translate("logfile_error")
+
+
+def clear_logs(controller, message):
+    controller.bot.send_message(message.chat.id, clear_logs_text())

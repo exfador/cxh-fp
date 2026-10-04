@@ -14,7 +14,7 @@ from tg_bot.constants.menu import (
 )
 from tg_bot import static_keyboards
 from tg_bot.keyboard_views.menu import home_keyboard, unknown_command_keyboard
-from tg_bot.menu_data import home_text
+from tg_bot.menu_data import home_text, updated_at
 
 
 class MenuNavigation:
@@ -79,14 +79,20 @@ class MenuNavigation:
         if len(parts) != MENU_CALLBACK_PARTS or parts[0] != MENU_PREFIX:
             return
         _, token, action, argument = parts
-        session = self.menu_store.get(
-            token, call.from_user.id, call.message.chat.id, call.message.id
-        )
-        if session is None or action not in MENU_ACTION_HANDLERS:
+        if action not in MENU_ACTION_HANDLERS:
             self.bot.answer_callback_query(
                 call.id, Localizer().translate("menu_expired")
             )
             return
+        session = self.menu_store.get(
+            token, call.from_user.id, call.message.chat.id, call.message.id
+        )
+        if session is None:
+            token = self.menu_store.create(
+                call.from_user.id, call.message.chat.id, call.message.id
+            )
+            if action == "confirm_restart":
+                action = "restart"
         self.bot.answer_callback_query(call.id)
         if action != "confirm_restart":
             self.menu_store.update(token, pending_restart=False)
@@ -138,6 +144,20 @@ class MenuNavigation:
     def menu_home(self, call, token, argument):
         self.clear_state(call.message.chat.id, call.from_user.id)
         self.menu_render(call, home_text(self.cardinal), home_keyboard(token))
+
+    def menu_refresh_home(self, call, token, argument):
+        self.clear_state(call.message.chat.id, call.from_user.id)
+        if self.cardinal.account.is_initiated and self.menu_store.begin_read(
+            token, "refresh_home"
+        ):
+            try:
+                self.cardinal.account.get()
+                self.cardinal.balance = self.cardinal.get_balance()
+            finally:
+                self.menu_store.finish_read(token)
+        self.menu_render(
+            call, home_text(self.cardinal) + updated_at(), home_keyboard(token)
+        )
 
     def open_more_settings(self, call):
         if not call.message or not self.menu_user_allowed(

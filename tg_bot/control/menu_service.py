@@ -8,7 +8,7 @@ class MenuService:
         )
 
     def menu_logs(self, call, token, argument):
-        if not self.menu_store.begin_read(token):
+        if not self.menu_store.begin_read(token, "logs"):
             return
         try:
             self.send_logs(self.menu_command_message(call))
@@ -16,7 +16,7 @@ class MenuService:
             self.menu_store.finish_read(token)
 
     def menu_backup(self, call, token, argument):
-        if not self.menu_store.begin_read(token):
+        if not self.menu_store.begin_read(token, "backup"):
             return
         try:
             self.get_backup(self.menu_command_message(call))
@@ -24,7 +24,7 @@ class MenuService:
             self.menu_store.finish_read(token)
 
     def menu_create_backup(self, call, token, argument):
-        if not self.menu_store.begin_read(token):
+        if not self.menu_store.begin_read(token, "create_backup"):
             return
         try:
             with self.menu_backup_lock:

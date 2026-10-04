@@ -117,7 +117,7 @@ class BlocklistPanel:
             return
         if time.monotonic() - state["data"]["created"] >= BLOCKLIST_INPUT_SECONDS:
             self.clear_state(message.chat.id, message.from_user.id)
-            self.blocklist_reply(message.chat.id, "menu_expired")
+            self.blocklist_reply(message.chat.id, "operator_bl_expired")
             return
         try:
             nickname = validate_nickname(message.text)

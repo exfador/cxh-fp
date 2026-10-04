@@ -96,6 +96,17 @@ class PremiumTeleBot(telebot.TeleBot):
             telebot.TeleBot.edit_message_reply_markup, args, kwargs, None
         )
 
+    def answer_callback_query(self, *args, **kwargs):
+        bound = inspect.signature(telebot.TeleBot.answer_callback_query).bind(
+            self, *args, **kwargs
+        )
+        navigation = self.panel_navigation
+        if navigation is not None and not bound.arguments.get("text"):
+            notice = navigation.unchanged_notice(bound.arguments["callback_query_id"])
+            if notice:
+                bound.arguments["text"] = notice
+        return telebot.TeleBot.answer_callback_query(*bound.args, **bound.kwargs)
+
     def delete_message(self, *args, **kwargs):
         navigation = self.panel_navigation
         bound = inspect.signature(telebot.TeleBot.delete_message).bind(

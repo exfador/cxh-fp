@@ -8,7 +8,7 @@ from tg_bot.keyboard_views.menu import (
     account_keyboard,
     restart_keyboard,
 )
-from tg_bot.menu_data import health_text, account_text
+from tg_bot.menu_data import health_text, account_text, updated_at
 from telebot.types import InlineKeyboardMarkup
 from Utils.cardinal_tools import restart_program
 
@@ -59,7 +59,7 @@ class MenuSections:
             menu_back(InlineKeyboardMarkup(), token, "service"),
         )
 
-    def menu_profile(self, call, token, argument):
+    def menu_profile(self, call, token, argument, refreshed=False):
         identifier = str(self.cardinal.account.id or "")
         if not identifier.isascii() or not identifier.isdecimal():
             self.menu_render(
@@ -68,10 +68,11 @@ class MenuSections:
                 menu_back(InlineKeyboardMarkup(), token),
             )
             return
+        text = account_text(self.cardinal)
+        if refreshed:
+            text += updated_at()
         self.menu_render(
-            call,
-            account_text(self.cardinal),
-            account_keyboard(token, FUNPAY_PROFILE_URL.format(identifier)),
+            call, text, account_keyboard(token, FUNPAY_PROFILE_URL.format(identifier))
         )
 
     def menu_restart(self, call, token, argument):

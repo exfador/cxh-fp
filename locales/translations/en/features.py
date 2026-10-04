@@ -95,3 +95,6 @@ cr_default_text = (
     "Hello, $username! If you have received order $order_id and everything is fine, "
     "please confirm it on FunPay. Thank you for your purchase!"
 )
+menu_updated_at = "\n\n<i>🕒 Updated at {}</i>"
+operator_bl_expired = "The input time ran out. Open the blacklist and press the button again."
+panel_unchanged = "✅ Up to date — nothing changed."

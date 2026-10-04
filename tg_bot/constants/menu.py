@@ -2,7 +2,7 @@ from types import MappingProxyType
 
 MENU_PREFIX = "hub"
 MENU_INPUT_STATE = "hub_input"
-MENU_SESSION_SECONDS = 900
+MENU_SESSION_SECONDS = 86400
 MENU_SESSION_LIMIT = 128
 MENU_TOKEN_BYTES = 4
 MENU_CALLBACK_PARTS = 4
@@ -20,6 +20,7 @@ MENU_INPUT_ACTIONS = frozenset({"search", "price"})
 MENU_ACTION_HANDLERS = MappingProxyType(
     {
         "home": "menu_home",
+        "refresh_home": "menu_refresh_home",
         "automation": "menu_automation",
         "settings": "menu_settings",
         "service": "menu_service",
@@ -52,6 +53,8 @@ MENU_ORDER_LIMIT = 100
 MENU_ORDER_CACHE_SECONDS = 120
 MENU_ORDER_TEXT_LIMIT = 300
 MENU_ORDER_DATE_FORMAT = "%d.%m.%Y %H:%M"
+MENU_UPDATED_FORMAT = "%H:%M:%S"
+MENU_HOME_ACTIONS = frozenset({"home", "refresh_home"})
 MENU_HOME_ROWS = (
     (("menu_lots_button", "lots"), ("menu_orders_button", "orders")),
     (("menu_automation_button", "automation"), ("mm_plugins", "plugins")),

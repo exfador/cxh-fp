@@ -34,6 +34,12 @@ def operator_images_keyboard():
     )
 
 
+def operator_system_keyboard():
+    keyboard = InlineKeyboardMarkup().row(operator_button("gl_refresh", "system"))
+    keyboard.keyboard.extend(operator_navigation().keyboard)
+    return keyboard
+
+
 def operator_logs_confirmation(nonce):
     return InlineKeyboardMarkup().row(
         operator_button(

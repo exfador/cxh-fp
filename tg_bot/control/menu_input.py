@@ -18,9 +18,9 @@ class MenuInput:
         if not any(lot.id == identifier for lot in cached_lots(self.cardinal)):
             raise ValueError("Offer is not in the owned profile")
         self.menu_store.update(token, lot_id=identifier)
-        self.menu_prompt(call, token, "price", "menu_price_prompt")
+        self.menu_prompt(call, token, "price", "menu_price_prompt", identifier)
 
-    def menu_prompt(self, call, token, action, text_key):
+    def menu_prompt(self, call, token, action, text_key, lot_id=None):
         self.menu_render(
             call,
             Localizer().translate(text_key),
@@ -31,7 +31,7 @@ class MenuInput:
             call.message.id,
             call.from_user.id,
             MENU_INPUT_STATE,
-            {"token": token, "action": action},
+            {"token": token, "action": action, "lot_id": lot_id},
         )
 
     def menu_input_message(self, message):
@@ -45,11 +45,12 @@ class MenuInput:
             token, message.from_user.id, message.chat.id, state["mid"]
         )
         if session is None:
-            self.clear_state(message.chat.id, message.from_user.id)
-            self.bot.send_message(
-                message.chat.id, Localizer().translate("menu_expired")
+            token = self.menu_store.create(
+                message.from_user.id, message.chat.id, state["mid"]
             )
-            return
+            session = self.menu_store.update(
+                token, lot_id=state["data"].get("lot_id")
+            )
         call = SimpleNamespace(
             from_user=message.from_user,
             message=SimpleNamespace(chat=message.chat, id=session.message_id),

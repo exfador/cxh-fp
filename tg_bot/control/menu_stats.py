@@ -18,7 +18,7 @@ class MenuStats:
 
     def menu_refresh_stats(self, call, token, argument):
         translate = Localizer().translate
-        if not self.menu_store.begin_read(token):
+        if not self.menu_store.begin_read(token, "refresh_stats"):
             self.menu_render(call, translate("menu_busy"), stats_keyboard(token))
             return
         try:

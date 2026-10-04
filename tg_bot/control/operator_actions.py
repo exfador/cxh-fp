@@ -23,10 +23,12 @@ from tg_bot.constants.operator import (
     OPERATOR_LOGGER,
     OPERATOR_PREFIX,
 )
+from tg_bot.control.log_files import clear_logs_text
 from tg_bot.keyboard_views.operator import (
     operator_images_keyboard,
     operator_logs_confirmation,
     operator_navigation,
+    operator_system_keyboard,
     operator_watermark_keyboard,
 )
 
@@ -245,14 +247,18 @@ class OperatorActions:
     def operator_logs_clear_confirm(self, call, argument=None):
         with self.process_action_lock:
             if not self.operator_logs_confirmation_valid(call, argument):
+                self.operator_service(call)
                 return
             self.clear_state(call.message.chat.id, call.from_user.id)
-            self.del_logs(self.operator_message(call))
-        self.operator_service(call)
+            text = clear_logs_text()
+        self.operator_render(call, text)
 
     def operator_system(self, call, argument=None):
-        self.send_system_info(self.operator_message(call))
-        self.operator_service(call)
+        self.operator_render(
+            call,
+            self.system_info_text(call.message.chat.id),
+            operator_system_keyboard(),
+        )
 
     def operator_about(self, call, argument=None):
         self.operator_render(
@@ -262,4 +268,4 @@ class OperatorActions:
     def operator_refresh_profile(self, call, argument=None):
         self.cardinal.account.get()
         self.cardinal.balance = self.cardinal.get_balance()
-        self.menu_profile(call, self.operator_session(call), "-")
+        self.menu_profile(call, self.operator_session(call), "-", refreshed=True)

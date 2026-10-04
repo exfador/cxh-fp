@@ -23,7 +23,7 @@ class MenuSession:
     pending_restart: bool = False
     orders: tuple | None = None
     revision: int = 0
-    last_read_at: float = float("-inf")
+    reads: tuple = ()
 
 
 class MenuSessionStore:
@@ -38,7 +38,7 @@ class MenuSessionStore:
             self.sessions = {
                 token: session
                 for token, session in self.sessions.items()
-                if session.expires_at > now and session.owner_id != owner_id
+                if session.expires_at > now
             }
             if len(self.sessions) >= MENU_SESSION_LIMIT:
                 oldest = min(
@@ -73,15 +73,19 @@ class MenuSessionStore:
             self.sessions[token] = replace(session, **fields)
             return self.sessions[token]
 
-    def begin_read(self, token):
+    def begin_read(self, token, action=""):
         with self.lock:
             session = self.sessions.get(token)
             now = self.clock()
             if session is None or session.expires_at <= now or session.reading:
                 return False
-            if now - session.last_read_at < MENU_READ_COOLDOWN:
+            reads = dict(session.reads)
+            if now - reads.get(action, float("-inf")) < MENU_READ_COOLDOWN:
                 return False
-            self.sessions[token] = replace(session, reading=True, last_read_at=now)
+            reads[action] = now
+            self.sessions[token] = replace(
+                session, reading=True, reads=tuple(reads.items())
+            )
             return True
 
     def finish_read(self, token):
@@ -101,9 +105,14 @@ class MenuSessionStore:
 
     def advance(self, token):
         with self.lock:
+            now = self.clock()
             session = self.sessions.get(token)
-            if session is None or session.expires_at <= self.clock():
+            if session is None or session.expires_at <= now:
                 return None
-            updated = replace(session, revision=session.revision + 1)
+            updated = replace(
+                session,
+                revision=session.revision + 1,
+                expires_at=now + MENU_SESSION_SECONDS,
+            )
             self.sessions[token] = updated
             return updated.revision

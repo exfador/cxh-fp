@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from html import escape
 import re
-from time import time
+from time import strftime, time
 import unicodedata
 
 import psutil
@@ -15,6 +15,7 @@ from tg_bot.constants.menu import (
     MENU_TITLE_MAX_LENGTH,
     MENU_ORDER_ID_PATTERN,
     MENU_ORDER_LIMIT,
+    MENU_UPDATED_FORMAT,
 )
 
 
@@ -127,6 +128,12 @@ def home_text(cardinal):
         sum(chat.unread for chat in cached_chats(cardinal)),
     )
     return text
+
+
+def updated_at():
+    return Localizer().translate(
+        "menu_updated_at", strftime(MENU_UPDATED_FORMAT)
+    )
 
 
 def home_profile_summary(cardinal, translate):
