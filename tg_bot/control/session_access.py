@@ -1,7 +1,14 @@
 from __future__ import annotations
+from contextlib import nullcontext
 from typing import TYPE_CHECKING
 from tg_bot.utils import NotificationTypes
-from tg_bot.constants.notification_policy import DISABLED_NOTIFICATION_TYPES
+from tg_bot.constants.notification_policy import (
+    DEFAULT_ENABLED_NOTIFICATION_TYPES,
+    DISABLED_NOTIFICATION_TYPES,
+)
+from tg_bot.constants.panel_navigation import PLUGIN_PANEL_OPTION, PLUGIN_PANEL_SECTION
+from tg_bot.panel_navigation import native_handler
+from cardinal_core.plugin_context import active_plugin, module_matches
 
 if TYPE_CHECKING:
     pass
@@ -64,7 +71,10 @@ class SessionAccess:
         try:
             return bool(self.notification_settings[str(chat_id)][notification_type])
         except KeyError:
-            return False
+            return (
+                notification_type in DEFAULT_ENABLED_NOTIFICATION_TYPES
+                and str(chat_id) in self.notification_settings
+            )
 
     def toggle_notification(self, chat_id: int, notification_type: str) -> bool:
         if (
@@ -100,6 +110,38 @@ class SessionAccess:
 
     def file_handler(self, state, handler):
         self.file_handlers[state] = handler
+        self.__dict__.setdefault("file_handler_owners", {})[state] = active_plugin()
+
+    def handler_owned(self, function, uuid, modules):
+        if getattr(function, "cxh_plugin", None) == uuid:
+            return True
+        target = getattr(function, "cxh_target", function)
+        return module_matches(getattr(target, "__module__", ""), modules)
+
+    def forget_plugin_handlers(self, uuid, modules=()):
+        def keep(item):
+            function = item.get("function") if isinstance(item, dict) else item
+            return not callable(function) or not self.handler_owned(
+                function, uuid, modules
+            )
+
+        removed = 0
+        for value in vars(self.bot).values():
+            groups = value.values() if isinstance(value, dict) else [value]
+            for group in groups:
+                if isinstance(group, list):
+                    before = len(group)
+                    group[:] = [item for item in group if keep(item)]
+                    removed += before - len(group)
+        owners = self.__dict__.setdefault("file_handler_owners", {})
+        for state, handler in list(self.file_handlers.items()):
+            if owners.get(state) == uuid or module_matches(
+                getattr(handler, "__module__", ""), modules
+            ):
+                self.file_handlers.pop(state)
+                owners.pop(state, None)
+                removed += 1
+        return removed
 
     def run_file_handlers(self, m: Message):
         if (state := self.get_state(m.chat.id, m.from_user.id)) is None or state[
@@ -107,7 +149,12 @@ class SessionAccess:
         ] not in self.file_handlers:
             return
         try:
-            self.file_handlers[state["state"]](m)
+            handler = self.file_handlers[state["state"]]
+            if native_handler(handler):
+                handler(m)
+            else:
+                with self.plugin_scope():
+                    handler(m)
             section = state["data"].get("operator_return")
             if section and self.get_state(m.chat.id, m.from_user.id) is None:
                 self.operator_complete(m, section)
@@ -115,14 +162,37 @@ class SessionAccess:
             _module_state.logger.error(_module_state._("log_tg_handler_error"))
             _module_state.logger.debug("TRACEBACK", exc_info=True)
 
+    def plugin_panel_enabled(self) -> bool:
+        try:
+            return self.cardinal.MAIN_CFG[PLUGIN_PANEL_SECTION].getboolean(
+                PLUGIN_PANEL_OPTION, fallback=False
+            )
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return False
+
+    def plugin_user_allowed(self, user) -> bool:
+        return user is not None and user.id in self.authorized_users
+
+    def plugin_scope(self):
+        navigation = getattr(self, "panel_navigation", None)
+        if navigation is None or self.plugin_panel_enabled():
+            return nullcontext()
+        return navigation.activate(None)
+
     def msg_handler(self, handler, **kwargs):
         bot_instance = self.bot
+        native = native_handler(handler)
 
         @bot_instance.message_handler(**kwargs)
         def run_handler(message: Message):
             try:
                 if handler == self.reg_admin:
                     return handler(message)
+                if not native and not self.plugin_panel_enabled():
+                    if self.plugin_user_allowed(message.from_user):
+                        self.bot.emoji_policy.observe(message.from_user)
+                        handler(message)
+                    return
                 if not self.menu_user_allowed(message.from_user, message.chat):
                     return
                 self.bot.emoji_policy.observe(message.from_user)
@@ -135,14 +205,24 @@ class SessionAccess:
                 _module_state.logger.error(_module_state._("log_tg_handler_error"))
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
 
+        run_handler.cxh_plugin, run_handler.cxh_target = active_plugin(), handler
+
     def cbq_handler(self, handler, func, **kwargs):
         bot_instance = self.bot
+        native = native_handler(handler)
 
         @bot_instance.callback_query_handler(func, **kwargs)
         def run_handler(call: CallbackQuery):
             try:
                 if handler == self.ignore_unauthorized_users:
                     return handler(call)
+                if not native and not self.plugin_panel_enabled():
+                    if not self.plugin_user_allowed(call.from_user):
+                        self.bot.answer_callback_query(call.id)
+                        return
+                    self.bot.emoji_policy.observe(call.from_user)
+                    handler(call)
+                    return
                 if not call.message or not self.menu_user_allowed(
                     call.from_user, call.message.chat
                 ):
@@ -158,6 +238,8 @@ class SessionAccess:
                 _module_state.logger.error(_module_state._("log_tg_handler_error"))
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
 
+        run_handler.cxh_plugin, run_handler.cxh_target = active_plugin(), handler
+
     def mdw_handler(self, handler, **kwargs):
         bot_instance = self.bot
 
@@ -168,6 +250,8 @@ class SessionAccess:
             except:
                 _module_state.logger.error(_module_state._("log_tg_handler_error"))
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
+
+        run_handler.cxh_plugin, run_handler.cxh_target = active_plugin(), handler
 
     def setup_chat_notifications(self, bot: _module_state.TGBot, m: Message):
         if not self.menu_user_allowed(m.from_user, m.chat):

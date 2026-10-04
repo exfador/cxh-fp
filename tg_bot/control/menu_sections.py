@@ -16,15 +16,24 @@ from Utils.cardinal_tools import restart_program
 class MenuSections:
     def menu_automation(self, call, token, argument):
         translate = Localizer().translate
-        lines = [translate("menu_automation_text")]
+        items = []
         for option, label in MENU_AUTOMATION_FIELDS:
-            state = translate(
-                "gl_on"
-                if self.cardinal.MAIN_CFG["FunPay"].getboolean(option)
-                else "gl_off"
+            enabled = self.cardinal.MAIN_CFG["FunPay"].getboolean(option)
+            items.append(
+                translate(
+                    "menu_automation_item",
+                    "🟢" if enabled else "🔴",
+                    translate(label),
+                    translate("menu_state_on" if enabled else "menu_state_off"),
+                )
             )
-            lines.append(translate(label, state))
-        self.menu_render(call, "\n".join(lines), automation_keyboard(token))
+        status = "\n".join(items)
+        text = (
+            f"{translate('menu_automation_text')}\n"
+            f"<blockquote>{status}</blockquote>\n\n"
+            f"{translate('menu_automation_hint')}"
+        )
+        self.menu_render(call, text, automation_keyboard(token))
 
     def menu_settings(self, call, token, argument):
         self.menu_render(

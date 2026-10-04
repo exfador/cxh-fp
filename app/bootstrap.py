@@ -35,6 +35,10 @@ def run_cardinal() -> None:
 def main() -> int:
     try:
         prepare_environment()
+        from app.stop_control import clear_stop_request, watch_stop_requests
+
+        clear_stop_request(Path.cwd())
+        watch_stop_requests(Path.cwd())
         from app.console_status import runtime_banner
 
         if Path(MAIN_CONFIG).exists():

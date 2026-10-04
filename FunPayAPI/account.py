@@ -15,6 +15,8 @@ from requests_toolbelt import MultipartEncoder
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import logging
 import random
 import string
@@ -68,6 +70,9 @@ class Account(
         self.active_sales: int | None = None
         self.active_purchases: int | None = None
         self.last_429_err_time: float = 0
+        self.link_ok_time: float = time.time()
+        self.link_error: Exception | None = None
+        self.link_error_time: float = 0
         self.last_flood_err_time: float = 0
         self.last_multiuser_flood_err_time: float = 0
         self.__locale: Literal["ru", "en", "uk"] | None = None

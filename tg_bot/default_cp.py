@@ -20,6 +20,8 @@ def init_default_cp(crd: Cardinal, *args):
         bot.answer_callback_query(c.id, text=_(c.data), show_alert=True)
 
     tg.cbq_handler(default_callback_answer, lambda c: True)
+    if hasattr(bot, "set_fallback_callback_handler"):
+        bot.set_fallback_callback_handler(bot.callback_query_handlers[-1])
 
 
 BIND_TO_PRE_INIT = [init_default_cp]

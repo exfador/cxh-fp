@@ -4,6 +4,7 @@ chcp 65001 >nul
 set "PYTHONUTF8=1"
 cd /d "%~dp0"
 echo [CXH FP] Запуск из "%~dp0"
+echo [CXH FP] Остановить: Ctrl+C в этом окне, tools\Stop.bat или «Инструменты → Выключить» в Telegram.
 if not exist "%~dp0.venv\Scripts\python.exe" goto missing
 "%~dp0.venv\Scripts\python.exe" "%~dp0start.py" %*
 set "START_RESULT=%ERRORLEVEL%"

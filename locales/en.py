@@ -463,10 +463,9 @@ from locales.translations.en.settings import (
     v_username,
 )
 
-plugin_activation_requires_restart = (
-    "Plugin enabled. Choose Tools → Restart to load its code."
-)
 from locales.translations.en import menu as _menu
+from locales.translations.en import chat_sync as _chat_sync
+from locales.translations.en import features as _features
 from locales.translations.en.pricing import (
     cmd_lot_price,
     lot_price_error,
@@ -477,11 +476,15 @@ from locales.translations.en.pricing import (
 
 
 def __getattr__(name):
+    for module in (_chat_sync, _features):
+        if hasattr(module, name):
+            return getattr(module, name)
     return getattr(_menu, name)
 
 
 def __dir__():
-    return sorted(set(globals()) | set(dir(_menu)))
+    modules = (_menu, _chat_sync, _features)
+    return sorted(set(globals()).union(*(dir(module) for module in modules)))
 
 
 from locales.translations.en.promotion import (

@@ -1,6 +1,6 @@
 UPDATE_TEXTS = {
     "ru": {
-        "title": "🔄 Обновления CXH FP",
+        "title": "🔄 <b>Обновления CXH FP</b>",
         "current": "Установлена версия {version}. Проверяем только подписанные релизы проекта.",
         "available": "🦊 Доступна версия {version}\n\nКод будет проверен и сохранена предыдущая версия. После установки бот перезапустится. Настройки, товары и плагины останутся на месте.",
         "check": "🔎 Проверить обновления",
@@ -19,7 +19,7 @@ UPDATE_TEXTS = {
         "managed": "Эту установку нельзя обновить из Telegram. Запустите бот через main.py; в Docker или готовой сборке обновите приложение обычным способом. Данные сохранены.",
     },
     "en": {
-        "title": "🔄 CXH FP updates",
+        "title": "🔄 <b>CXH FP updates</b>",
         "current": "Installed version: {version}. Only signed project releases are accepted.",
         "available": "🦊 Version {version} is available\n\nThe previous code will be saved before installation. The bot will restart afterwards. Settings, stock and plugins are preserved.",
         "check": "🔎 Check for updates",

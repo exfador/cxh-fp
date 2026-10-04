@@ -1,6 +1,8 @@
 from __future__ import annotations
+from cardinal_core import plugin_compat
+from cardinal_core.plugin_context import plugin_owner
 from cardinal_core.plugin_loading.loader import PluginLoader
-from cardinal_core.plugin_loading.constants import PLUGIN_DIRECTORY
+from cardinal_core.plugin_loading.constants import PLACEHOLDER_FLAG, PLUGIN_DIRECTORY
 from cardinal_core.plugin_loading.diagnostics import error_summary
 from typing import TYPE_CHECKING, Callable
 
@@ -12,11 +14,13 @@ import time
 import sys
 import os
 from Utils import cardinal_tools
-from threading import Thread
+from threading import RLock, Thread
 import cardinal as _module_state
 
 
 class PluginLifecycle:
+    plugin_activation_lock = RLock()
+
     def run(self):
         self.run_id += 1
         self.start_time = int(time.time())
@@ -85,9 +89,11 @@ class PluginLifecycle:
 
     @staticmethod
     def load_plugin(from_file: str) -> tuple:
+        plugin_compat.install()
         return PluginLoader(PLUGIN_DIRECTORY, frozenset()).load(from_file)
 
     def load_plugins(self):
+        plugin_compat.install()
         if not os.path.exists("plugins"):
             _module_state.logger.warning(_module_state._("crd_no_plugins_folder"))
             return
@@ -104,6 +110,7 @@ class PluginLifecycle:
                     PLUGIN_DIRECTORY, set(self.disabled_plugins)
                 ).load(file)
             except BaseException as error:
+                self.remember_broken(file, error_summary(error))
                 _module_state.logger.error(
                     "%s %s",
                     _module_state._("crd_plugin_load_err", file),
@@ -112,9 +119,15 @@ class PluginLifecycle:
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
                 continue
             if not self.is_uuid_valid(data["UUID"]):
+                self.remember_broken(file, "UUID должен быть строкой UUID v4")
                 _module_state.logger.error(_module_state._("crd_invalid_uuid", file))
                 continue
             if data["UUID"] in self.plugins:
+                self.remember_broken(
+                    file,
+                    f"UUID {data['UUID']} уже занят плагином "
+                    f"«{self.plugins[data['UUID']].name}»",
+                )
                 _module_state.logger.error(
                     _module_state._(
                         "crd_uuid_already_registered", data["UUID"], data["NAME"]
@@ -136,6 +149,11 @@ class PluginLifecycle:
             )
             self.plugins[data["UUID"]] = plugin_data
 
+    def remember_broken(self, file: str, error: str) -> None:
+        record = getattr(self, "record_broken", None)
+        if record is not None:
+            record(file, error)
+
     def add_handlers_from_plugin(self, plugin, uuid: str | None = None):
         for name in self.handler_bind_var_names:
             try:
@@ -154,21 +172,23 @@ class PluginLifecycle:
             plugin = self.plugins[i].plugin
             try:
                 self.add_handlers_from_plugin(plugin, i)
-            except:
+            except Exception as error:
                 _module_state.logger.error(
                     _module_state._("crd_plugin_handlers_err", self.plugins[i].name)
                 )
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
                 self.plugins[i].enabled = False
+                self.plugins[i].load_error = error_summary(error)
 
     def run_handlers(self, handlers_list: list[Callable], args) -> None:
         for func in handlers_list:
             try:
                 plugin_uuid = getattr(func, "plugin_uuid")
-                if plugin_uuid is None or (
-                    plugin_uuid in self.plugins and self.plugins[plugin_uuid].enabled
-                ):
+                if plugin_uuid is None:
                     func(*args)
+                elif plugin_uuid in self.plugins and self.plugins[plugin_uuid].enabled:
+                    with plugin_owner(plugin_uuid):
+                        func(*args)
             except Exception as ex:
                 text = _module_state._("crd_handler_err")
                 try:
@@ -187,12 +207,60 @@ class PluginLifecycle:
                 self.telegram.add_command_to_menu(i[0], i[1])
 
     def toggle_plugin(self, uuid):
-        self.plugins[uuid].enabled = not self.plugins[uuid].enabled
+        data = self.plugins[uuid]
+        if not data.enabled and getattr(data.plugin, PLACEHOLDER_FLAG, False):
+            self.activate_plugin(uuid)
+            return
+        data.enabled = not data.enabled
+        self.remember_plugin_state(uuid)
+
+    def remember_plugin_state(self, uuid):
         if self.plugins[uuid].enabled and uuid in self.disabled_plugins:
             self.disabled_plugins.remove(uuid)
         elif not self.plugins[uuid].enabled and uuid not in self.disabled_plugins:
             self.disabled_plugins.append(uuid)
         cardinal_tools.cache_disabled_plugins(self.disabled_plugins)
+
+    def activate_plugin(self, uuid) -> bool:
+        data = self.plugins[uuid]
+        with self.plugin_activation_lock:
+            if not getattr(data.plugin, PLACEHOLDER_FLAG, False):
+                data.enabled = True
+                self.remember_plugin_state(uuid)
+                return True
+            try:
+                plugin, fields = PluginLoader(PLUGIN_DIRECTORY, frozenset()).load(
+                    os.path.basename(data.path)
+                )
+                if fields["UUID"] != uuid:
+                    sys.modules.pop(plugin.__name__, None)
+                    raise ValueError("Plugin changed its declared UUID")
+                self.add_handlers_from_plugin(plugin, uuid)
+            except BaseException as error:
+                data.load_error = error_summary(error)
+                _module_state.logger.error(
+                    "%s %s",
+                    _module_state._("crd_plugin_load_err", os.path.basename(data.path)),
+                    data.load_error,
+                )
+                _module_state.logger.debug("TRACEBACK", exc_info=True)
+                return False
+            data.name, data.version = fields["NAME"], fields["VERSION"]
+            data.description, data.credits = fields["DESCRIPTION"], fields["CREDITS"]
+            data.plugin, data.settings_page = plugin, fields["SETTINGS_PAGE"]
+            data.delete_handler, data.load_error = fields["BIND_TO_DELETE"], None
+            data.enabled = True
+            self.remember_plugin_state(uuid)
+        self.start_plugin(plugin)
+        return True
+
+    def publish_telegram_commands(self) -> dict:
+        try:
+            self.telegram.setup_commands()
+        except Exception:
+            _module_state.logger.warning("Произошла ошибка при установке команд.")
+            _module_state.logger.debug("TRACEBACK", exc_info=True)
+        return dict(self.telegram.commands)
 
     def pin_plugin(self, uuid):
         self.plugins[uuid].pinned = not self.plugins[uuid].pinned

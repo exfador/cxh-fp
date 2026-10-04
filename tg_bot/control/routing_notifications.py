@@ -6,6 +6,7 @@ from tg_bot.constants.menu import MENU_PREFIX, MENU_INPUT_STATE
 from tg_bot.constants.blocklist import BLOCKLIST_INPUT_STATE
 from tg_bot.constants.operator import OPERATOR_PREFIX
 from tg_bot.constants.panel_navigation import PANEL_CALLBACK_PREFIX
+from tg_bot.constants.commands import LEGACY_COMMANDS
 from contextlib import nullcontext
 
 if TYPE_CHECKING:
@@ -44,11 +45,14 @@ class RoutingNotifications:
         )
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
+        for method, commands in LEGACY_COMMANDS:
+            self.msg_handler(getattr(self, method), commands=list(commands))
         self.msg_handler(
             self.send_unknown_command,
             content_types=["text"],
             func=lambda message: bool(message.text) and message.text.startswith("/"),
         )
+        self.bot.set_fallback_message_handler(self.bot.message_handlers[-1])
         self.cbq_handler(
             self.operator_callback,
             lambda call: (call.data or "").startswith(f"{OPERATOR_PREFIX}:"),

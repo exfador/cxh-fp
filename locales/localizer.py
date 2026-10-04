@@ -58,7 +58,8 @@ class Localizer:
         language: Literal["ru", "en"],
     ):
         if language not in self.languages:
-            logger.warning(UNSUPPORTED_TRANSLATION_LOG, language)
+            if language != REMOVED_LANGUAGE:
+                logger.warning(UNSUPPORTED_TRANSLATION_LOG, language)
             return
         setattr(self.languages[language], f"{uuid}_{variable_name}", value)
 

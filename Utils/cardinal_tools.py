@@ -208,23 +208,19 @@ def create_greeting_text(cardinal: Cardinal):
     return account_summary(cardinal)
 
 
-def time_to_str(time_: int):
+def time_to_str(time_: int, units=("д", "ч", "мин", "с")):
     days = time_ // 86400
     hours = (time_ - days * 86400) // 3600
     minutes = (time_ - days * 86400 - hours * 3600) // 60
     seconds = time_ - days * 86400 - hours * 3600 - minutes * 60
     if not any([days, hours, minutes, seconds]):
-        return "0 сек"
-    time_str = ""
-    if days:
-        time_str += f"{days}д"
-    if hours:
-        time_str += f" {hours}ч"
-    if minutes:
-        time_str += f" {minutes}мин"
-    if seconds:
-        time_str += f" {seconds}сек"
-    return time_str.strip()
+        return f"0 {units[3]}"
+    parts = [
+        f"{value} {unit}"
+        for value, unit in zip((days, hours, minutes, seconds), units)
+        if value
+    ]
+    return " ".join(parts)
 
 
 def get_month_name(month_number: int) -> str:
@@ -389,7 +385,7 @@ def shut_down():
     from Utils.logger import stop_logging
 
     stop_logging()
-    psutil.Process().terminate()
+    os._exit(0)
 
 
 def set_console_title(title: str) -> None:

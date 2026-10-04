@@ -1,6 +1,8 @@
 import atexit
 import copy
+import functools
 import logging
+import logging.config
 import logging.handlers
 import queue
 import sys
@@ -16,7 +18,6 @@ from Utils.logging_support.formatters import (
     ConsoleFilter,
     CLILoggerFormatter,
     FileLoggerFormatter,
-    network_retry_message,
     safe_message,
 )
 
@@ -29,7 +30,6 @@ class SafeQueueHandler(logging.handlers.QueueHandler):
 
     def prepare(self, record):
         cloned = copy.copy(record)
-        cloned.console_summary = network_retry_message(record)
         cloned.msg, cloned.args = safe_message(record), ()
         cloned.exc_text = None
         return cloned
@@ -80,15 +80,29 @@ class LoggingRuntime:
             self.previous.append(
                 (logger, logger.handlers[:], logger.level, logger.propagate)
             )
+        self.attach()
+        guard_configuration()
+        self.listener.start()
+        self.started = True
+        atexit.register(self.stop)
+        return self
+
+    def attach(self):
+        for name in ("", *LOGGER_NAMES):
+            logger = logging.getLogger(name)
             logger.handlers = [self.handler] if not name else []
             logger.setLevel(
                 logging.WARNING if name in PAYLOAD_LOGGER_NAMES else logging.DEBUG
             )
             logger.propagate = bool(name)
-        self.listener.start()
-        self.started = True
-        atexit.register(self.stop)
-        return self
+            logger.disabled = False
+
+    def restore(self, disabled):
+        self.attach()
+        for name, was_disabled in disabled.items():
+            logger = logging.Logger.manager.loggerDict.get(name)
+            if isinstance(logger, logging.Logger) and not was_disabled:
+                logger.disabled = False
 
     def flush(self):
         if self.started:
@@ -113,3 +127,29 @@ def current_runtime():
         if isinstance(handler, SafeQueueHandler):
             return handler.runtime
     return None
+
+
+def guarded_configuration(original):
+    @functools.wraps(original)
+    def configure(*args, **kwargs):
+        runtime = current_runtime()
+        disabled = {
+            name: logger.disabled
+            for name, logger in list(logging.Logger.manager.loggerDict.items())
+            if isinstance(logger, logging.Logger)
+        }
+        try:
+            return original(*args, **kwargs)
+        finally:
+            if runtime is not None and runtime.started:
+                runtime.restore(disabled)
+
+    configure.cxh_logging_guard = True
+    return configure
+
+
+def guard_configuration():
+    for name in ("dictConfig", "fileConfig"):
+        original = getattr(logging.config, name)
+        if not getattr(original, "cxh_logging_guard", False):
+            setattr(logging.config, name, guarded_configuration(original))

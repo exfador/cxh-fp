@@ -1,3 +1,4 @@
+import functools
 import inspect
 import secrets
 from contextlib import contextmanager
@@ -14,12 +15,15 @@ from tg_bot import CBT
 from tg_bot.constants.menu import MENU_NOT_MODIFIED
 from tg_bot.constants.panel_history import PANEL_HISTORY_TOKEN_BYTES
 from tg_bot.constants.panel_navigation import (
+    PANEL_BACK_ALIASES,
     PANEL_BUTTON_BACK,
     PANEL_BUTTON_CANCEL,
     PANEL_CALLBACK_PREFIX,
     PANEL_CONTEXT_NAME,
     PANEL_EDIT_METHODS,
     PANEL_LOCK_COUNT,
+    PANEL_NATIVE_CALLBACK_ROOTS,
+    PANEL_NATIVE_MODULE_ROOTS,
     PANEL_REMOVE_METHOD,
     PANEL_REPLACE_MENU_ACTIONS,
     PANEL_REPLACE_METHOD,
@@ -27,6 +31,25 @@ from tg_bot.constants.panel_navigation import (
 from tg_bot.constants.plugin_consent import UPLOAD_CONSENT_PREFIX
 from tg_bot.keyboard_appearance import canonical_keyboard, incoming_keyboard
 from tg_bot.panel_history import PanelHistory
+
+NATIVE_CBT_ROOTS = frozenset(
+    value.split(":", 1)[0]
+    for name, value in vars(CBT).items()
+    if not name.startswith("_") and isinstance(value, str)
+)
+
+
+def native_handler(handler):
+    target = handler
+    while True:
+        if isinstance(target, functools.partial):
+            target = target.func
+        elif inspect.ismethod(target):
+            target = target.__func__
+        else:
+            break
+    module = getattr(target, "__module__", None) or type(target).__module__ or ""
+    return module.split(".", 1)[0] in PANEL_NATIVE_MODULE_ROOTS
 
 
 @dataclass(frozen=True)
@@ -103,6 +126,13 @@ class PanelNavigation:
             CBT.SWITCH,
             CBT.SWITCH_TG_NOTIFICATIONS,
             CBT.LANG,
+            CBT.CHAT_SYNC_TOGGLE,
+            CBT.CHAT_SYNC_UNBIND,
+            CBT.CHAT_SYNC_UNBIND_CONFIRM,
+            CBT.CHAT_SYNC_HELPERS_REFRESH,
+            CBT.CHAT_SYNC_HELPER_DEL,
+            CBT.CONFIRM_REMINDER_TOGGLE,
+            CBT.CONFIRM_REMINDER_RESET,
             UPLOAD_CONSENT_PREFIX,
         }:
             return True
@@ -201,10 +231,16 @@ class PanelNavigation:
         found = False
         for row in result.keyboard:
             for button in row:
-                if self.button_label(button.text) in labels or (
-                    button.callback_data or ""
-                ).startswith(PANEL_CALLBACK_PREFIX):
+                data = button.callback_data or ""
+                label = self.button_label(button.text)
+                if data.startswith(PANEL_CALLBACK_PREFIX) or (
+                    label in labels and self.native_callback(data)
+                ):
                     button.callback_data = PANEL_CALLBACK_PREFIX + token
+                    found = True
+                elif not self.native_callback(data) and (
+                    label in labels or label in PANEL_BACK_ALIASES
+                ):
                     found = True
         if not found:
             result.row(
@@ -214,6 +250,13 @@ class PanelNavigation:
                 )
             )
         return result
+
+    @staticmethod
+    def native_callback(data):
+        root = data.split(":", 1)[0]
+        return (
+            not data or root in PANEL_NATIVE_CALLBACK_ROOTS or root in NATIVE_CBT_ROOTS
+        )
 
     def button_label(self, text):
         return "".join(

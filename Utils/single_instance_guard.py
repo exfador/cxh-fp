@@ -22,8 +22,8 @@ class SingleInstanceGuard:
             if error.errno not in {errno.EACCES, errno.EAGAIN}:
                 raise
             raise SystemExit(
-                "CXH FP уже запущен из этой папки. Используйте работающего бота или "
-                "остановите его перед повторным запуском. / CXH FP is already running."
+                "FPC уже запущен из этой папки. Используйте работающего бота или "
+                "остановите его перед повторным запуском. / FPC is already running."
             ) from None
         cls._lock_handle = lock_handle
 

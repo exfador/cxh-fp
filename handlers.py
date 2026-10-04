@@ -54,6 +54,8 @@ from bot_handlers.notifications import (
     update_profile_lots,
     update_lot_state,
 )
+from bot_handlers.chat_sync import chat_sync_initial_handler, chat_sync_message_handler
+from bot_handlers.order_reminder import order_reminder_message_handler
 from bot_handlers.delivery import (
     update_lots_states,
     update_profiles_handler,
@@ -62,7 +64,11 @@ from bot_handlers.delivery import (
     send_bot_started_notification_handler,
 )
 
-BIND_TO_INIT_MESSAGE = [save_init_chats_handler, update_threshold_on_initial_chat]
+BIND_TO_INIT_MESSAGE = [
+    save_init_chats_handler,
+    update_threshold_on_initial_chat,
+    chat_sync_initial_handler,
+]
 BIND_TO_LAST_CHAT_MESSAGE_CHANGED = [
     old_log_msg_handler,
     greetings_handler,
@@ -82,6 +88,8 @@ BIND_TO_NEW_MESSAGE = [
     send_response_handler,
     process_review_handler,
     send_new_msg_notification_handler,
+    chat_sync_message_handler,
+    order_reminder_message_handler,
     send_command_notification_handler,
     test_auto_delivery_handler,
 ]

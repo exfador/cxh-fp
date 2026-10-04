@@ -32,17 +32,47 @@ class PremiumTeleBot(telebot.TeleBot):
         super().__init__(token, *args, **kwargs)
         self.emoji_policy = emoji_policy or OwnerPremiumPolicy(token)
         self.panel_navigation = None
+        self.fallback_message_handler = None
+        self.fallback_callback_handler = None
+
+    @staticmethod
+    def insert_before(handlers, fallback, handler_dict):
+        if fallback is None or handler_dict is fallback:
+            return False
+        for index, existing in enumerate(handlers):
+            if existing is fallback:
+                handlers.insert(index, handler_dict)
+                return True
+        return False
+
+    @staticmethod
+    def move_last(handlers, handler_dict):
+        if handler_dict in handlers:
+            handlers.remove(handler_dict)
+        handlers.append(handler_dict)
+        return handler_dict
 
     def add_message_handler(self, handler_dict):
-        command_positions = [
-            index
-            for index, existing in enumerate(self.message_handlers)
-            if existing.get("filters", {}).get("commands")
-        ]
-        if handler_dict.get("filters", {}).get("commands") and command_positions:
-            self.message_handlers.insert(command_positions[-1] + 1, handler_dict)
-            return
-        super().add_message_handler(handler_dict)
+        if not self.insert_before(
+            self.message_handlers, self.fallback_message_handler, handler_dict
+        ):
+            super().add_message_handler(handler_dict)
+
+    def add_callback_query_handler(self, handler_dict):
+        if not self.insert_before(
+            self.callback_query_handlers, self.fallback_callback_handler, handler_dict
+        ):
+            super().add_callback_query_handler(handler_dict)
+
+    def set_fallback_message_handler(self, handler_dict):
+        self.fallback_message_handler = self.move_last(
+            self.message_handlers, handler_dict
+        )
+
+    def set_fallback_callback_handler(self, handler_dict):
+        self.fallback_callback_handler = self.move_last(
+            self.callback_query_handlers, handler_dict
+        )
 
     def send_message(self, *args, **kwargs):
         return self.ui_request(telebot.TeleBot.send_message, args, kwargs, "text")

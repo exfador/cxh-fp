@@ -43,5 +43,5 @@ NOTIFICATION_SETTINGS_ROWS = (
     (("review", "ns_new_review"), ("bot_start", "ns_bot_start")),
     (("lots_restore", "ns_lot_activate"), ("lots_deactivate", "ns_lot_deactivate")),
     (("delivery", "ns_delivery"), ("lots_raise", "ns_raise")),
-    (("other", "ns_other"),),
+    (("other", "ns_other"), ("connection", "ns_connection")),
 )

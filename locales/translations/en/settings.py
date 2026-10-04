@@ -19,7 +19,7 @@ cfg_ad = (
     "📦 <b>Delivery settings</b>\nLinked offers, delivery texts and product file names."
 )
 cfg_not_found_err = "Configuration file {} was not found."
-cfg_empty_err = "Configuration file {} is empty."
+cfg_empty_err = "File {} is empty, there is nothing to download yet."
 tmplt_not_found_err = (
     "Template <code>{}</code> is no longer in the list. Refresh it and select again."
 )
@@ -38,7 +38,7 @@ plugin_details_text = (
 pl_new = "🧩 <b>Upload a plugin</b>\n\nSend a <code>.py</code> file or a <code>.zip</code> archive up to 20 MB.\n\nThe ZIP must contain one plugin <code>.py</code> file and its dependency folders. A single enclosing folder is supported. Everything is installed in <code>plugins</code>. Repack RAR archives as ZIP first.\n\nExisting files are kept. Restart the bot from Tools after installation.\n\nPlugins can access bot data. Only upload trusted plugins."
 au_user_settings = "🔐 <b>Access · {}</b>"
 adv_fpc = ""
-adv_description = ""
+adv_description = "🦊 CXH FP v{}\n\n📦 Offers, prices and delivery\n🧾 Orders and buyer messages\n💬 Replies, reviews and templates\n🧩 Store plugins\n🌟 And much more...\n\n📣 Channel: @funpay_coxerhub\n👤 Developer: @coxerhub"
 desc_main = "🦊 <b>CXH FP · 1.1</b>\n\nChoose what to manage."
 desc_lang = "🌐 <b>Language</b>\n\nChoose the language for bot menus and messages."
 desc_gs = "⚙️ <b>Bot features</b>\n\nTurn features on or off. Delivery and replies also have settings for individual offers and commands."
@@ -58,8 +58,8 @@ desc_oc = "✅ <b>After a sale</b>\n\nMessage sent when a buyer confirms an orde
 desc_or = "⭐ <b>Review replies</b>\n\nSelect a rating to preview its reply. Use «Text» to edit it and «Auto reply» to turn it on or off. Each rating has its own reply."
 desc_an = "External broadcasts are disabled."
 desc_cfg = "📁 <b>Configuration files</b>\n\nDownload current settings or upload a replacement file."
-desc_tmplt = "📝 <b>Reply templates</b>\n\nKeep frequently used messages here and select them when replying to buyers."
-desc_pl = "🧩 <b>Plugins</b>\n\nSelect a plugin to view its details and settings. Restart the bot after changing plugins."
+desc_tmplt = "📝 <b>Reply templates</b>\n\nKeep frequently used messages here and select them when replying to buyers: from a message or order notification, or with the «📝 Templates» button in a chat sync topic."
+desc_pl = "🧩 <b>Plugins</b>\n\nSelect a plugin to view its details and settings. Plugins are installed, enabled and deleted without a restart. ⚠️ marks a plugin that failed to load; open it to see why."
 desc_au = "🔐 <b>Bot access</b>\n\nThese users can manage the bot. Select a user to view their access settings."
 desc_proxy = "🌐 <b>Proxy connection</b>\n\nChoose a saved proxy or add one."
 cmd_menu = "Main menu"

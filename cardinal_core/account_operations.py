@@ -13,6 +13,7 @@ import requests
 import FunPayAPI
 from FunPayAPI import utils as fp_utils
 from Utils import cardinal_tools
+from cardinal_core.raise_schedule import save_raise_schedule
 import tg_bot.bot
 import cardinal as _module_state
 
@@ -203,6 +204,7 @@ class AccountOperations:
             next_time = time.time() + wait_time + 1
             time.sleep(2)
             self.raise_time[subcat.category.id] = next_time
+            save_raise_schedule(self.raise_time, self.raised_time)
             next_call = next_time if next_time < next_call else next_call
             if raise_ok:
                 self.run_handlers(

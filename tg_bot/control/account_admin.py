@@ -178,7 +178,11 @@ class AccountAdministration:
 
     def act_edit_watermark(self, m: Message):
         watermark = self.cardinal.MAIN_CFG["Other"]["watermark"]
-        watermark = f"\n<code>{utils.escape(watermark)}</code>" if watermark else ""
+        watermark = (
+            f"\n<code>{utils.escape(watermark)}</code>"
+            if watermark
+            else f" {_module_state._('watermark_none')}"
+        )
         result = self.bot.send_message(
             m.chat.id,
             _module_state._("act_edit_watermark").format(watermark),

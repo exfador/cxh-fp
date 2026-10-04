@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 from tg_bot import utils, keyboards, CBT
 from tg_bot.control.plugin_consent import PluginUploadConsent
 from tg_bot.constants.plugin_consent import UPLOAD_CONSENT_PREFIX
+from tg_bot.constants.commands import PUBLIC_COMMANDS
+from tg_bot.constants.panel_navigation import PLUGIN_PANEL_OPTION, PLUGIN_PANEL_SECTION
 from locales.localizer import Localizer
 from telebot.types import (
     InlineKeyboardMarkup as K,
@@ -39,14 +41,16 @@ def init_plugins_cp(cardinal: Cardinal, *args):
             return False
         return True
 
-    def open_plugins_list(c: CallbackQuery):
-        offset = int(c.data.split(":")[1])
+    def render_plugins_list(c: CallbackQuery, offset: int):
         bot.edit_message_text(
             _("desc_pl"),
             c.message.chat.id,
             c.message.id,
             reply_markup=keyboards.plugins_list(cardinal, offset),
         )
+
+    def open_plugins_list(c: CallbackQuery):
+        render_plugins_list(c, int(c.data.split(":")[1]))
         bot.answer_callback_query(c.id)
 
     def open_edit_plugin_cp(c: CallbackQuery):
@@ -55,6 +59,10 @@ def init_plugins_cp(cardinal: Cardinal, *args):
         if not check_plugin_exists(uuid, c.message):
             bot.answer_callback_query(c.id)
             return
+        render_plugin_card(c, uuid, offset)
+        bot.answer_callback_query(c.id)
+
+    def render_plugin_card(c: CallbackQuery, uuid: str, offset: int):
         plugin_data = cardinal.plugins[uuid]
         text = _(
             "plugin_details_text",
@@ -64,11 +72,12 @@ def init_plugins_cp(cardinal: Cardinal, *args):
             utils.escape(plugin_data.credits),
             utils.escape(plugin_data.uuid),
         )
+        if getattr(plugin_data, "load_error", None):
+            text += _("plugin_load_error_line", utils.escape(plugin_data.load_error))
         keyboard = keyboards.edit_plugin(cardinal, uuid, offset)
         bot.edit_message_text(
             text, c.message.chat.id, c.message.id, reply_markup=keyboard
         )
-        bot.answer_callback_query(c.id)
 
     def open_plugin_commands(c: CallbackQuery):
         split = c.data.split(":")
@@ -98,11 +107,17 @@ def init_plugins_cp(cardinal: Cardinal, *args):
         if not check_plugin_exists(uuid, c.message):
             bot.answer_callback_query(c.id)
             return
-        cardinal.toggle_plugin(uuid)
-        if cardinal.plugins[uuid].enabled and getattr(
-            cardinal.plugins[uuid].plugin, "_cardinal_disabled_placeholder", False
-        ):
-            bot.send_message(c.message.chat.id, _("plugin_activation_requires_restart"))
+        enabling = not cardinal.plugins[uuid].enabled
+        with tg.plugin_scope():
+            cardinal.toggle_plugin(uuid)
+        if enabling and not cardinal.plugins[uuid].enabled:
+            bot.answer_callback_query(
+                c.id,
+                _("plugin_activation_failed", cardinal.plugins[uuid].name),
+                show_alert=True,
+            )
+            render_plugin_card(c, uuid, offset)
+            return
         c.data = f"{CBT.EDIT_PLUGIN}:{uuid}:{offset}"
         logger.info(
             _(
@@ -157,7 +172,8 @@ def init_plugins_cp(cardinal: Cardinal, *args):
             return
         if cardinal.plugins[uuid].delete_handler:
             try:
-                cardinal.plugins[uuid].delete_handler(cardinal, c)
+                with tg.plugin_scope():
+                    cardinal.plugins[uuid].delete_handler(cardinal, c)
             except:
                 logger.error(
                     _("log_pl_delete_handler_err", cardinal.plugins[uuid].name)
@@ -172,9 +188,95 @@ def init_plugins_cp(cardinal: Cardinal, *args):
                 cardinal.plugins[uuid].name,
             )
         )
-        cardinal.plugins.pop(uuid)
+        if hasattr(cardinal, "unload_plugin"):
+            cardinal.unload_plugin(uuid)
+        else:
+            forget_plugin_commands(cardinal.plugins.pop(uuid))
         c.data = f"{CBT.PLUGINS_LIST}:{offset}"
         open_plugins_list(c)
+
+    def broken_entry(c: CallbackQuery):
+        split = c.data.split(":")
+        entry = getattr(cardinal, "broken_plugins", {}).get(split[1])
+        offset = int(split[2]) if len(split) > 2 and split[2].isdigit() else 0
+        if entry is None:
+            bot.answer_callback_query(c.id, _("plugin_broken_missing"), show_alert=True)
+            render_plugins_list(c, offset)
+            return None, offset
+        return entry, offset
+
+    def render_broken(c: CallbackQuery, entry, offset: int, ask_to_delete=False):
+        text = _(
+            "plugin_broken_text",
+            utils.escape(entry.name),
+            utils.escape(entry.file),
+            utils.escape(entry.error),
+        )
+        bot.edit_message_text(
+            text,
+            c.message.chat.id,
+            c.message.id,
+            reply_markup=keyboards.broken_plugin(entry, offset, ask_to_delete),
+        )
+
+    def open_broken_plugin(c: CallbackQuery):
+        entry, offset = broken_entry(c)
+        if entry is None:
+            return
+        render_broken(c, entry, offset)
+        bot.answer_callback_query(c.id)
+
+    def retry_broken_plugin(c: CallbackQuery):
+        entry, offset = broken_entry(c)
+        if entry is None:
+            return
+        with tg.plugin_scope():
+            loaded, result = cardinal.retry_broken_plugin(entry.key)
+        if loaded:
+            logger.info(
+                _("log_pl_activated", c.from_user.username, c.from_user.id, entry.name)
+            )
+            bot.answer_callback_query(c.id, _("plugin_broken_loaded"))
+            render_plugin_card(c, result, offset)
+            return
+        bot.answer_callback_query(
+            c.id, _("plugin_activation_failed", entry.name), show_alert=True
+        )
+        render_broken(c, cardinal.broken_plugins.get(entry.key, entry), offset)
+
+    def ask_delete_broken(c: CallbackQuery):
+        entry, offset = broken_entry(c)
+        if entry is None:
+            return
+        render_broken(c, entry, offset, ask_to_delete=True)
+        bot.answer_callback_query(c.id)
+
+    def delete_broken(c: CallbackQuery):
+        entry, offset = broken_entry(c)
+        if entry is None:
+            return
+        cardinal.delete_broken_plugin(entry.key)
+        logger.info(
+            _("log_pl_deleted", c.from_user.username, c.from_user.id, entry.name)
+        )
+        c.data = f"{CBT.PLUGINS_LIST}:{offset}"
+        open_plugins_list(c)
+
+    def forget_plugin_commands(removed):
+        kept = {
+            command for data in cardinal.plugins.values() for command in data.commands
+        }
+        stale = [
+            command
+            for command in removed.commands
+            if command in tg.commands
+            and command not in kept
+            and command not in dict(PUBLIC_COMMANDS)
+        ]
+        for command in stale:
+            tg.commands.pop(command)
+        if stale and hasattr(cardinal, "publish_telegram_commands"):
+            cardinal.publish_telegram_commands()
 
     def pin_plugin(c: CallbackQuery):
         split = c.data.split(":")
@@ -185,6 +287,24 @@ def init_plugins_cp(cardinal: Cardinal, *args):
         cardinal.pin_plugin(uuid)
         c.data = f"{CBT.EDIT_PLUGIN}:{uuid}:{offset}"
         open_edit_plugin_cp(c)
+
+    def toggle_plugin_panel(c: CallbackQuery):
+        offset = int(c.data.split(":")[1])
+        value = "0" if tg.plugin_panel_enabled() else "1"
+        cardinal.MAIN_CFG[PLUGIN_PANEL_SECTION][PLUGIN_PANEL_OPTION] = value
+        cardinal.save_config(cardinal.MAIN_CFG, "configs/_main.cfg")
+        logger.info(
+            _(
+                "log_param_changed",
+                c.from_user.username,
+                c.from_user.id,
+                PLUGIN_PANEL_OPTION,
+                PLUGIN_PANEL_SECTION,
+                value,
+            )
+        )
+        c.data = f"{CBT.PLUGINS_LIST}:{offset}"
+        open_plugins_list(c)
 
     consent = PluginUploadConsent(tg, open_plugins_list)
 
@@ -209,6 +329,22 @@ def init_plugins_cp(cardinal: Cardinal, *args):
         delete_plugin, lambda c: c.data.startswith(f"{CBT.CONFIRM_DELETE_PLUGIN}:")
     )
     tg.cbq_handler(pin_plugin, lambda c: c.data.startswith(f"{CBT.PIN_PLUGIN}:"))
+    tg.cbq_handler(
+        toggle_plugin_panel, lambda c: c.data.startswith(f"{CBT.PLUGIN_PANEL}:")
+    )
+    tg.cbq_handler(
+        open_broken_plugin, lambda c: c.data.startswith(f"{CBT.PLUGIN_BROKEN}:")
+    )
+    tg.cbq_handler(
+        retry_broken_plugin,
+        lambda c: c.data.startswith(f"{CBT.PLUGIN_BROKEN_RETRY}:"),
+    )
+    tg.cbq_handler(
+        ask_delete_broken, lambda c: c.data.startswith(f"{CBT.PLUGIN_BROKEN_DELETE}:")
+    )
+    tg.cbq_handler(
+        delete_broken, lambda c: c.data.startswith(f"{CBT.PLUGIN_BROKEN_CONFIRM}:")
+    )
     tg.cbq_handler(
         consent.request, lambda c: c.data.startswith(f"{CBT.UPLOAD_PLUGIN}:")
     )

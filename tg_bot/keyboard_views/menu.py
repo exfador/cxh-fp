@@ -63,7 +63,10 @@ def home_keyboard(token):
         menu_button("menu_account_button", token, "profile"),
         menu_button("menu_service_button", token, "service"),
     )
-    keyboard.row(menu_button("menu_refresh_dashboard", token, "home"))
+    keyboard.row(
+        menu_button("menu_stats_button", token, "stats"),
+        menu_button("menu_refresh_dashboard", token, "home"),
+    )
     keyboard.row(
         Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL),
         Button(Localizer().translate("menu_join_chat"), url=CHAT_URL),
@@ -77,6 +80,8 @@ def legacy_button(label, section):
         "users": f"{CBT.AUTHORIZED_USERS}:0",
         "proxy": f"{CBT.PROXY}:0",
         "configs": CBT.CONFIG_LOADER,
+        "chat_sync": CBT.CHAT_SYNC,
+        "confirm_reminder": CBT.CONFIRM_REMINDER,
     }
     return Button(
         Localizer().translate(label),
@@ -180,12 +185,41 @@ def lot_keyboard(token, lot_id):
 def orders_keyboard(token, orders, page, total):
     keyboard = Keyboard()
     for order in orders:
-        keyboard.row(Button(order.title, url=FUNPAY_ORDER_URL.format(order.identifier)))
+        keyboard.row(
+            Button(
+                order.title,
+                callback_data=f"{MENU_PREFIX}:{token}:order:{order.identifier}",
+            )
+        )
     add_menu_pages(keyboard, token, "orders", page, total)
-    keyboard.row(menu_button("gl_refresh", token, "refresh_orders"))
+    keyboard.row(
+        menu_button("gl_refresh", token, "refresh_orders"),
+        menu_button("menu_stats_button", token, "stats"),
+    )
     keyboard.row(
         Button(Localizer().translate("menu_open_sales_button"), url=FUNPAY_SALES_URL),
         menu_button("menu_chats_button", token, "chats"),
+    )
+    return menu_back(keyboard, token)
+
+
+def order_keyboard(token, identifier):
+    keyboard = Keyboard().row(
+        Button(
+            Localizer().translate("order_open_button"),
+            url=FUNPAY_ORDER_URL.format(identifier),
+        )
+    )
+    return menu_back(keyboard, token, "orders")
+
+
+def stats_keyboard(token):
+    keyboard = Keyboard().row(
+        menu_button("gl_refresh", token, "refresh_stats"),
+        menu_button("menu_orders_button", token, "orders"),
+    )
+    keyboard.row(
+        Button(Localizer().translate("menu_open_sales_button"), url=FUNPAY_SALES_URL)
     )
     return menu_back(keyboard, token)
 

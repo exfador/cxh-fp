@@ -1,5 +1,5 @@
 from __future__ import annotations
-from app.constants.branding import DEVELOPER_URL
+from contextlib import nullcontext
 from app.constants.languages import SUPPORTED_LANGUAGES
 from typing import TYPE_CHECKING
 
@@ -256,7 +256,11 @@ class OrderInterface:
         self.bot.answer_callback_query(c.id)
 
     def cancel_action(self, call: CallbackQuery):
-        result = self.clear_state(call.message.chat.id, call.from_user.id, True)
+        navigation = getattr(self, "panel_navigation", None)
+        with navigation.activate(None) if navigation else nullcontext():
+            result = self.clear_state(call.message.chat.id, call.from_user.id, True)
+        if navigation is not None and result is not None:
+            navigation.history.forget(call.from_user.id, call.message.chat.id, result)
         if result is None:
             self.bot.answer_callback_query(call.id)
 
@@ -298,7 +302,7 @@ class OrderInterface:
         self.bot.send_message(c.message.chat.id, _module_state._("old_mode_help"))
 
     def empty_callback(self, c: CallbackQuery):
-        self.bot.answer_callback_query(c.id, DEVELOPER_URL)
+        self.bot.answer_callback_query(c.id)
 
     def switch_lang(self, c: CallbackQuery):
         if not c.message or not self.menu_user_allowed(c.from_user, c.message.chat):

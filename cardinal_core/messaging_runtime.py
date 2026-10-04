@@ -15,6 +15,8 @@ from tg_bot import (
     file_uploader,
     authorized_users_cp,
     proxy_cp,
+    chat_sync_cp,
+    order_reminder_cp,
     default_cp,
 )
 import time
@@ -254,7 +256,8 @@ class MessagingRuntime:
         self.add_handlers_from_plugin(handlers)
         self.load_plugins()
         self.add_handlers()
-        if self.MAIN_CFG["Telegram"].getboolean("enabled"):
+        telegram_enabled = self.MAIN_CFG["Telegram"].getboolean("enabled")
+        if telegram_enabled:
             self._Cardinal__init_telegram()
             for module in [
                 auto_response_cp,
@@ -265,19 +268,23 @@ class MessagingRuntime:
                 file_uploader,
                 authorized_users_cp,
                 proxy_cp,
+                chat_sync_cp,
+                order_reminder_cp,
                 default_cp,
             ]:
                 self.add_handlers_from_plugin(module)
         self.run_handlers(self.pre_init_handlers, (self,))
+        published = None
+        if telegram_enabled:
+            published = self.publish_telegram_commands()
+            Thread(target=self.telegram.run, daemon=True).start()
+            from tg_bot.connection_monitor import ConnectionMonitor
+
+            self.connection_monitor = ConnectionMonitor(self).start()
         self._Cardinal__init_account()
         self.runner = FunPayAPI.Runner(self.account, self.old_mode_enabled)
         self._Cardinal__update_profile()
         self.run_handlers(self.post_init_handlers, (self,))
-        if self.MAIN_CFG["Telegram"].getboolean("enabled"):
-            try:
-                self.telegram.setup_commands()
-            except:
-                _module_state.logger.warning("Произошла ошибка при установке команд.")
-                _module_state.logger.debug("TRACEBACK", exc_info=True)
-            Thread(target=self.telegram.run, daemon=True).start()
+        if telegram_enabled and self.telegram.commands != published:
+            self.publish_telegram_commands()
         return self

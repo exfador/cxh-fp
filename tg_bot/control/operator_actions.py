@@ -194,8 +194,13 @@ class OperatorActions:
 
     def operator_watermark(self, call, argument=None):
         watermark = self.cardinal.MAIN_CFG["Other"]["watermark"]
-        current = f"\n<code>{escape(watermark)}</code>" if watermark else ""
-        text = Localizer().translate("act_edit_watermark").format(current)
+        translate = Localizer().translate
+        current = (
+            f"\n<code>{escape(watermark)}</code>"
+            if watermark
+            else f" {translate('watermark_none')}"
+        )
+        text = translate("act_edit_watermark").format(current)
         self.operator_prompt(
             call, text, CBT.EDIT_WATERMARK, "home", operator_watermark_keyboard()
         )

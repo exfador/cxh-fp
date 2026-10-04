@@ -3,8 +3,23 @@ from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     pass
+from dataclasses import dataclass
+from hashlib import sha256
 from types import ModuleType
 import cardinal as _module_state
+
+
+@dataclass
+class BrokenPlugin:
+    file: str
+    path: str
+    name: str
+    error: str
+    uuid: str | None = None
+
+    @property
+    def key(self) -> str:
+        return sha256(self.file.encode("utf-8")).hexdigest()[:12]
 
 
 def get_cardinal() -> None | _module_state.Cardinal:
@@ -39,3 +54,4 @@ class PluginData:
         self.delete_handler = delete_handler
         self.enabled = enabled
         self.pinned = pinned
+        self.load_error = None

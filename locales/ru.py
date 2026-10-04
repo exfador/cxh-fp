@@ -463,10 +463,9 @@ from locales.translations.ru.settings import (
     v_username,
 )
 
-plugin_activation_requires_restart = (
-    "Плагин включён. Нажмите «Инструменты → Перезапустить», чтобы загрузить его код."
-)
 from locales.translations.ru import menu as _menu
+from locales.translations.ru import chat_sync as _chat_sync
+from locales.translations.ru import features as _features
 from locales.translations.ru.pricing import (
     cmd_lot_price,
     lot_price_error,
@@ -477,11 +476,15 @@ from locales.translations.ru.pricing import (
 
 
 def __getattr__(name):
+    for module in (_chat_sync, _features):
+        if hasattr(module, name):
+            return getattr(module, name)
     return getattr(_menu, name)
 
 
 def __dir__():
-    return sorted(set(globals()) | set(dir(_menu)))
+    modules = (_menu, _chat_sync, _features)
+    return sorted(set(globals()).union(*(dir(module) for module in modules)))
 
 
 from locales.translations.ru.promotion import (

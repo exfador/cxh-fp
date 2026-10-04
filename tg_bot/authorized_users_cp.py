@@ -31,7 +31,7 @@ def init_authorized_users_cp(crd: Cardinal, *args):
         __, user_id, offset = c.data.split(":")
         user_id = int(user_id)
         offset = int(offset)
-        text = _("au_user_settings", f"<a href='tg:user?id={user_id}'>{user_id}</a>")
+        text = _("au_user_settings", f'<a href="tg://user?id={user_id}">{user_id}</a>')
         try:
             bot.edit_message_text(
                 text,

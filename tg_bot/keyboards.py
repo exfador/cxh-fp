@@ -42,6 +42,19 @@ from tg_bot.keyboard_views.messages import (
     templates_list,
     edit_template,
     templates_list_ans_mode,
-    plugins_list,
-    edit_plugin,
 )
+from tg_bot.keyboard_views.plugins import plugins_list, edit_plugin, broken_plugin
+from app.constants.branding import CHANNEL_URL, CHAT_URL, DEVELOPER_URL
+
+
+def links(language: None | str = None) -> K:
+    return (
+        K()
+        .add(B(_("lnk_github", language=language), url=DEVELOPER_URL))
+        .add(B(_("lnk_updates", language=language), url=CHANNEL_URL))
+        .add(B(_("lnk_chat", language=language), url=CHAT_URL))
+    )
+
+
+def announcements_settings(c: Cardinal, chat_id: int) -> K:
+    return notifications_settings(c, chat_id)

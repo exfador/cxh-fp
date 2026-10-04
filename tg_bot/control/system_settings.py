@@ -40,11 +40,12 @@ class SystemSettings:
         current_time = int(time.time())
         uptime = current_time - self.cardinal.start_time
         ram = psutil.virtual_memory()
-        cpu_usage = "\n".join(
-            (
-                f"    CPU {i}:  <code>{l}%</code>"
-                for i, l in enumerate(psutil.cpu_percent(percpu=True))
-            )
+        cores = psutil.cpu_percent(percpu=True) or [0.0]
+        cpu_usage = _module_state._(
+            "sys_cpu_summary",
+            round(sum(cores) / len(cores), 1),
+            max(cores),
+            len(cores),
         )
         self.bot.send_message(
             m.chat.id,

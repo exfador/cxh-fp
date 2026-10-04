@@ -60,6 +60,7 @@ class NotificationTypes:
     ad = "12"
     critical = "13"
     important_announcement = "14"
+    connection = "15"
 
 
 def load_authorized_users() -> dict[int, dict[str, bool | None | str]]:

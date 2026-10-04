@@ -7,7 +7,7 @@ from app.brand_policy import (
 from app.constants.branding import (
     BRAND_SIGNATURE,
     DEFAULT_MESSAGE_SIGNATURE,
-    PREVIOUS_MESSAGE_SIGNATURE,
+    OUTDATED_MESSAGE_SIGNATURES,
     SIGNATURE_SEPARATOR,
     LINE_ENDINGS,
 )
@@ -20,7 +20,7 @@ def prepare_outgoing_message(text, signature, watermark):
         return text
     if signature in {
         BRAND_SIGNATURE,
-        PREVIOUS_MESSAGE_SIGNATURE,
+        *OUTDATED_MESSAGE_SIGNATURES,
     } or is_legacy_signature(signature):
         signature = DEFAULT_MESSAGE_SIGNATURE
     visible = text.lstrip(LINE_ENDINGS)

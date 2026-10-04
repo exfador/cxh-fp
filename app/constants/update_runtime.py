@@ -1,7 +1,7 @@
 from pathlib import Path
 
 UPDATE_REPOSITORY = "exfador/cxh-fp"
-UPDATE_PUBLIC_KEY = "bf11e13ee0b888aafa65a04beb35eed373aba1c11c7a84a721e3582d58e5ee02"
+UPDATE_PUBLIC_KEY = "dda382fc2feabdd8198fd1dac0b3395b12198a44c19f39df96af183f0fe791a7"
 UPDATE_RELEASE_API = "https://api.github.com/repos/{}/releases/latest"
 UPDATE_MANIFEST_ASSET = "cxh-fp-manifest.json"
 UPDATE_ARCHIVE_ASSET = "cxh-fp.zip"

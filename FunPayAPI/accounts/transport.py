@@ -53,12 +53,26 @@ class RequestTransport:
             "proxies": self.proxy or {},
             "cookies": cookies,
         }
-        response = self._execute_request(link, payload, kwargs)
+        try:
+            response = self._execute_request(link, payload, kwargs)
+        except Exception as error:
+            self.note_link_failure(error)
+            raise
         if response.status_code == 403:
-            raise exceptions.UnauthorizedError(response)
+            error = exceptions.UnauthorizedError(response)
+            self.note_link_failure(error)
+            raise error
+        if response.status_code >= 500:
+            self.note_link_failure(exceptions.RequestFailedError(response))
+        else:
+            self.link_ok_time = time.time()
         if response.status_code != 200 and raise_not_200:
             raise exceptions.RequestFailedError(response)
         return response
+
+    def note_link_failure(self, error: Exception) -> None:
+        self.link_error = error
+        self.link_error_time = time.time()
 
     def _prepare_request(
         self, api_method, request_method, headers, exclude_phpsessid, locale

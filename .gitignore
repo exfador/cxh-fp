@@ -26,11 +26,15 @@
 /storage
 /configs
 /plugins/*
+!/plugins/fazer_cards.py
+!/plugins/fazer_cards_lib/
 /build
 /dist
 test.py
 *.zip
 tests/
+!/.github/tests/
+!/.github/tests/**
 tools/
 docs/ui-preview/
 docs/architecture.md
@@ -40,13 +44,3 @@ requirements/inputs/
 requirements/locked/development-*.txt
 
 /plugin_services/
-/.github/
-/backups/
-/configs/
-/docs/
-/logs/
-/plugins/
-/run/
-/storage/
-/tests/
-/tools/

@@ -37,7 +37,7 @@ class UpdateSupervisor:
         if self.child is not None and self.child.poll() is None:
             self.child.send_signal(number)
 
-    def launch(self):
+    def launch(self, deadline=False):
         if self.stopping:
             return False
         self.nonce = secrets.token_hex(settings.UPDATE_TOKEN_BYTES)
@@ -49,14 +49,18 @@ class UpdateSupervisor:
             cwd=self.root,
             env=environment,
         )
-        return self.wait_for_health()
+        return self.wait_for_health(deadline)
 
-    def wait_for_health(self):
-        deadline = monotonic() + settings.UPDATE_BOOT_TIMEOUT
+    def wait_for_health(self, deadline=False):
+        limit = monotonic() + settings.UPDATE_BOOT_TIMEOUT
         while not self.stopping and self.child.poll() is None:
             if self.valid_health():
                 return True
-            if monotonic() >= deadline:
+            if deadline and monotonic() >= limit:
+                print(
+                    f"The new version did not start in {settings.UPDATE_BOOT_TIMEOUT} s",
+                    flush=True,
+                )
                 break
             sleep(settings.UPDATE_TICK_SECONDS)
         return False
@@ -138,7 +142,7 @@ class UpdateSupervisor:
         install_archive(self.root, archive, manifest["files"])
         mark_boot_pending(self.root)
         self.version = manifest["version"]
-        if not self.launch():
+        if not self.launch(deadline=True):
             return False
         commit_pending(self.root)
         self.record_result(request, "done")

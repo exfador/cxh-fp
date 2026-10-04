@@ -81,6 +81,7 @@ def load_main_config(config_path: str, persist_migrations: bool = True):
             "secretKeyHash": "any",
             "proxy": "any+empty",
             "blockLogin": ["0", "1"],
+            "pluginPanel": ["0", "1"],
         },
         "BlockList": {
             "blockDelivery": ["0", "1"],
@@ -189,6 +190,12 @@ def load_main_config(config_path: str, persist_migrations: bool = True):
                 and (param_name not in config[section_name])
             ):
                 config.set("Telegram", "blockLogin", "0")
+            elif (
+                section_name == "Telegram"
+                and param_name == "pluginPanel"
+                and (param_name not in config[section_name])
+            ):
+                config.set("Telegram", "pluginPanel", "0")
             elif (
                 section_name == "Telegram"
                 and param_name == "secretKeyHash"

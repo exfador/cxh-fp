@@ -39,6 +39,9 @@ MENU_ACTION_HANDLERS = MappingProxyType(
         "reset_lots": "menu_reset_lots",
         "refresh_lots": "menu_refresh_lots",
         "refresh_orders": "menu_refresh_orders",
+        "order": "menu_order",
+        "stats": "menu_stats",
+        "refresh_stats": "menu_refresh_stats",
         "logs": "menu_logs",
         "backup": "menu_backup",
         "create_backup": "menu_create_backup",
@@ -46,6 +49,9 @@ MENU_ACTION_HANDLERS = MappingProxyType(
     }
 )
 MENU_ORDER_LIMIT = 100
+MENU_ORDER_CACHE_SECONDS = 120
+MENU_ORDER_TEXT_LIMIT = 300
+MENU_ORDER_DATE_FORMAT = "%d.%m.%Y %H:%M"
 MENU_HOME_ROWS = (
     (("menu_lots_button", "lots"), ("menu_orders_button", "orders")),
     (("menu_automation_button", "automation"), ("mm_plugins", "plugins")),
@@ -53,21 +59,22 @@ MENU_HOME_ROWS = (
     (("menu_account_button", "profile"), ("menu_help_button", "help")),
 )
 MENU_AUTOMATION_FIELDS = (
-    ("autoRaise", "gs_autoraise"),
-    ("autoResponse", "gs_autoresponse"),
-    ("autoDelivery", "gs_autodelivery"),
+    ("autoRaise", "menu_auto_raise"),
+    ("autoResponse", "menu_auto_response"),
+    ("autoDelivery", "menu_auto_delivery"),
 )
 MENU_AUTOMATION_ROWS = (
     (("mm_global", "main"),),
     (("mm_autoresponse", "ar"), ("mm_autodelivery", "ad")),
     (("mm_greetings", "gr"), ("mm_order_confirm", "oc")),
     (("mm_review_reply", "rr"), ("mm_templates", "templates")),
-    (("mm_blacklist", "bl"),),
+    (("mm_blacklist", "bl"), ("mm_confirm_reminder", "confirm_reminder")),
 )
 MENU_SETTINGS_ROWS = (
     (("mm_notifications", "tg"), ("mm_new_msg_view", "mv")),
     (("mm_authorized_users", "users"), ("mm_language", "lang")),
     (("mm_proxy", "proxy"), ("mm_configs", "configs")),
+    (("mm_chat_sync", "chat_sync"),),
 )
 FUNPAY_CHAT_URL = "https://funpay.com/chat/"
 FUNPAY_SALES_URL = "https://funpay.com/orders/trade"

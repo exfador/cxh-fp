@@ -42,6 +42,8 @@ from tg_bot.control.lot_pricing import LotPricing
 from tg_bot.control.navigation import MenuNavigation
 from tg_bot.control.menu_sections import MenuSections
 from tg_bot.control.menu_trading import MenuTrading
+from tg_bot.control.menu_stats import MenuStats
+from tg_bot.control.menu_orders import MenuOrderDetails
 from tg_bot.control.menu_input import MenuInput
 from tg_bot.control.menu_service import MenuService
 from tg_bot.control.operator_actions import OperatorActions
@@ -51,9 +53,11 @@ from threading import Lock
 from tg_bot.premium_client import PremiumTeleBot
 from tg_bot.panel_navigation import PanelNavigation
 from tg_bot.control.updates import UpdatePanel
+from tg_bot.control.upstream_compat import UpstreamCompat
 
 
 class TGBot(
+    UpstreamCompat,
     UpdatePanel,
     SessionAccess,
     AccountAdministration,
@@ -64,6 +68,8 @@ class TGBot(
     MenuNavigation,
     MenuSections,
     MenuTrading,
+    MenuStats,
+    MenuOrderDetails,
     MenuInput,
     MenuService,
     OperatorActions,

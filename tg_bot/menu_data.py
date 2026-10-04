@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from html import escape
 import re
 from time import time
@@ -8,6 +8,7 @@ import psutil
 
 from FunPayAPI.common.enums import SubCategoryTypes, OrderStatuses
 from locales.localizer import Localizer
+from Utils.cardinal_tools import time_to_str
 from tg_bot.constants.menu import (
     MENU_PAGE_SIZE,
     MENU_SEARCH_MAX_LENGTH,
@@ -27,6 +28,7 @@ class MenuLot:
 class MenuOrder:
     identifier: str
     title: str
+    shortcut: object = field(default=None, compare=False, repr=False)
 
 
 def normalize_search(value):
@@ -87,18 +89,19 @@ def cached_orders(cardinal):
 
 def order_rows(orders):
     statuses = {
-        OrderStatuses.PAID: "menu_paid",
-        OrderStatuses.CLOSED: "menu_closed",
-        OrderStatuses.REFUNDED: "menu_refunded",
+        OrderStatuses.PAID: ("🟡", "menu_paid"),
+        OrderStatuses.CLOSED: ("✅", "menu_closed"),
+        OrderStatuses.REFUNDED: ("↩️", "menu_refunded"),
     }
     translate = Localizer().translate
     result = []
     for order in orders[:MENU_ORDER_LIMIT]:
         if not re.fullmatch(MENU_ORDER_ID_PATTERN, str(order.id)):
             continue
-        status = translate(statuses.get(order.status, "menu_unknown"))
-        title = f"#{order.id} · {order.price:g} {order.currency.name} · {status}"
-        result.append(MenuOrder(order.id, title))
+        icon, label = statuses.get(order.status, ("▫️", "menu_unknown"))
+        price = f"{order.price:g} {order.currency}"
+        title = f"{icon} #{order.id} · {price} · {translate(label)}"
+        result.append(MenuOrder(order.id, title, order))
     return result
 
 
@@ -167,10 +170,11 @@ def health_text(cardinal):
     translate = Localizer().translate
     process = psutil.Process()
     enabled = sum(plugin.enabled for plugin in cardinal.plugins.values())
+    uptime = max(0, int(time() - cardinal.start_time))
     return translate(
         "menu_health_text",
         cardinal.VERSION,
-        max(0, int(time() - cardinal.start_time)),
+        time_to_str(uptime, tuple(translate("menu_uptime_units").split())),
         process.memory_info().rss // 1048576,
         enabled,
         len(cardinal.plugins),

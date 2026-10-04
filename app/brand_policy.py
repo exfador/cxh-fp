@@ -10,9 +10,8 @@ from app.constants.branding import (
     LEGACY_WEAK_SIGNATURES,
     LINE_ENDINGS,
     MESSAGE_CONFIG_FIELDS,
-    MESSAGE_SIGNATURE_HEADER,
-    PREVIOUS_MESSAGE_SIGNATURE,
-    PREVIOUS_MESSAGE_SIGNATURE_LINES,
+    OUTDATED_MESSAGE_SIGNATURES,
+    OUTDATED_SIGNATURE_LINES,
     SIGNATURE_LINE_SEPARATORS,
 )
 
@@ -38,26 +37,33 @@ def is_legacy_signature(signature):
     return bool(compact) and compact in aliases
 
 
-def rebrand_previous_signature(text):
+def replace_signature_block(text, block):
     lines = text.splitlines(keepends=True)
     populated = [index for index, line in enumerate(lines) if line.strip()]
     if not populated:
         return text
-    count = len(PREVIOUS_MESSAGE_SIGNATURE_LINES)
-    for index in {populated[0], populated[-1] - count + 1}:
+    count = len(block)
+    for index in sorted({populated[0], populated[-1] - count + 1}, reverse=True):
         if index < 0:
             continue
         group = tuple(
             line.rstrip(LINE_ENDINGS) for line in lines[index : index + count]
         )
-        if group == PREVIOUS_MESSAGE_SIGNATURE_LINES:
-            header = lines[index].rstrip(LINE_ENDINGS)
-            lines[index] = MESSAGE_SIGNATURE_HEADER + lines[index][len(header) :]
+        if group == block:
+            last = lines[index + count - 1]
+            ending = last[len(last.rstrip(LINE_ENDINGS)) :]
+            lines[index : index + count] = [DEFAULT_MESSAGE_SIGNATURE + ending]
     return "".join(lines)
 
 
+def replace_outdated_signatures(text):
+    for block in OUTDATED_SIGNATURE_LINES:
+        text = replace_signature_block(text, block)
+    return text
+
+
 def rebrand_message_signatures(text):
-    text = rebrand_previous_signature(text)
+    text = replace_outdated_signatures(text)
     lines = text.splitlines(keepends=True)
     populated = [index for index, line in enumerate(lines) if line.strip()]
     if not populated:
@@ -129,7 +135,7 @@ def migrate_message_templates(config):
 
 def migrate_brand_signature(config):
     signature = config.get("Other", "watermark", fallback="")
-    known_default = signature in {BRAND_SIGNATURE, PREVIOUS_MESSAGE_SIGNATURE}
+    known_default = signature in {BRAND_SIGNATURE, *OUTDATED_MESSAGE_SIGNATURES}
     if not known_default and not is_legacy_signature(signature):
         return False
     config.set("Other", "watermark", DEFAULT_MESSAGE_SIGNATURE)

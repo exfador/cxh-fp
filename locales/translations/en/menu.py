@@ -33,6 +33,7 @@ menu_open_chats_button = "💬 Chats on FunPay"
 menu_open_profile_button = "👤 FunPay profile"
 menu_balance_button = "💳 FunPay balance"
 menu_restart_confirm = "🔄 Restart now"
+menu_uptime_units = "d h min s"
 menu_paid = "Paid"
 menu_closed = "Completed"
 menu_refunded = "Refunded"
@@ -40,7 +41,16 @@ menu_unknown = "No data"
 menu_connected = "Connected"
 menu_connecting = "Connecting to FunPay…"
 menu_home_text = "🦊 <b>CXH FP</b>  <code>v{0}</code>\n<i>Store dashboard</i>\n\n🟢 <b>{1}</b>{2}\n\n<blockquote>🧾 Active orders: <b>{3}</b>  ·  📦 Offers: <b>{4}</b>\n💬 Unread chats: <b>{5}</b></blockquote>\n\nChoose an action ↓"
-menu_automation_text = "🚀 <b>Automation</b>\n\nCurrent settings:\n"
+menu_automation_text = "⚡ <b>Automation</b>\n\nWhat the bot does now:"
+menu_automation_item = "{0} {1} — <b>{2}</b>"
+menu_automation_hint = (
+    "Turn a feature on or off with «Bot features». The other buttons open settings."
+)
+menu_auto_raise = "Raising offers"
+menu_auto_response = "Command auto replies"
+menu_auto_delivery = "Delivery after payment"
+menu_state_on = "on"
+menu_state_off = "off"
 menu_settings_text = (
     "⚙️ <b>Settings</b>\n\nManage notifications, access, language and connection."
 )
@@ -49,10 +59,10 @@ menu_help_text = '❔ <b>Quick guide</b>\n\n<b>Offers & prices</b> — check you
 menu_account_text = "👤 <b>{0}</b>\nID: <code>{1}</code>\nActive orders: {2}\n"
 menu_balance_text = "\n<b>Balance</b>\nRUB: {0:.2f} · available {1:.2f}\nUSD: {2:.2f} · available {3:.2f}\nEUR: {4:.2f} · available {5:.2f}\n"
 menu_cache_note = "\nData from the latest sync."
-menu_health_text = "📊 <b>Bot status</b>\n\nVersion: {0}\nUptime: {1} s\nMemory used: {2} MB\nPlugins enabled: {3} of {4}\nOffers: {5}\nOrders in cache: {6}\n\nExternal broadcasts and automatic updates are off."
+menu_health_text = "📊 <b>Bot status</b>\n\nVersion: {0}\nUptime: {1}\nMemory used: {2} MB\nPlugins enabled: {3} of {4}\nOffers: {5}\nOrders in cache: {6}\n\nExternal broadcasts and automatic updates are off."
 menu_restart_text = "🔄 <b>Restart the bot?</b>\n\nFunPay and Telegram will briefly disconnect. The bot will load your saved settings on startup."
 menu_lots_text = "💰 <b>Offers & prices</b>\n{0} found · Page {1}/{2}\nSearch: <code>{3}</code>\n\nSelect an offer to see the buyer’s SBP total. This list uses the latest profile sync. Refresh if an offer is missing."
-menu_orders_text = "🧾 <b>Orders</b>\n{0} listed · Page {1}\n\nSelect an order to open it on FunPay. Refresh to load up to 100 recent sales."
+menu_orders_text = "🧾 <b>Orders</b>\n{0} listed · Page {1}\n\nTap an order to see its details. Refresh to load up to 100 recent sales."
 menu_chats_text = "💬 <b>Chats</b>\nLoaded: {0}\nUnread: {1}\n\nOpen FunPay to read and reply to conversations."
 menu_search_prompt = "🔎 <b>Find an offer</b>\n\nSend part of its title or the offer ID.\nUse the Back button to cancel the search."
 menu_price_prompt = "💰 <b>Calculate the buyer’s total</b>\n\nSend your price in rubles, such as <code>590</code> or <code>590.50</code>. You’ll see the amount the buyer pays with SBP.\n\nThis does not change the offer."
@@ -65,7 +75,11 @@ menu_action_error = (
 menu_shutdown_confirm = "⏹ Shut down now"
 menu_open_user_button = "👤 Telegram profile"
 lot_details_text = "📦 <b>{0}</b>\n\n<b>Delivery message</b>\n<code>{1}</code>\n\nProducts in stock: {2}\nProduct file: {3}"
-lot_no_file = "Not linked"
+lot_no_file = "not linked"
+watermark_none = "no signature"
+sys_cpu_summary = (
+    "Load: <code>{}%</code> average, up to <code>{}%</code> per core · cores: {}"
+)
 menu_search_invalid = "Send an offer title or ID, using no more than 120 characters."
 menu_price_invalid = "Send a positive price in rubles, such as 590 or 590.50."
 
@@ -139,4 +153,14 @@ operator_watermark_clear = "🚫 No signature"
 menu_updates_button = "🔄 Updates"
 menu_check_updates_button = "🔎 Check releases"
 
-menu_unknown_command_text = "❔ <b>Command unavailable</b>\n\nThis bot has no handler for that command. If it belongs to a plugin, check that the plugin is installed, enabled and loaded after restarting.\n\nOpen Plugins or use the button below to return to the main menu."
+menu_unknown_command_text = "❔ <b>Command unavailable</b>\n\nThis bot has no handler for that command. If it belongs to a plugin, check that the plugin is installed and enabled.\n\nOpen Plugins or use the button below to return to the main menu."
+
+pl_panel_mode = "🧭 Plugin menus in panel: {}"
+plugin_load_error_line = "\n\n⚠️ <b>Failed to load:</b> <code>{}</code>"
+plugin_broken_text = "⚠️ <b>{}</b>\n\nFile: <code>{}</code>\n\nThe plugin failed to load:\n<code>{}</code>\n\nFix the file and choose Load again, or delete the plugin."
+plugin_broken_retry = "🔄 Load again"
+plugin_broken_loaded = "✅ Plugin loaded"
+plugin_broken_missing = "This plugin is no longer in the list."
+plugin_upload_started = '✅ <b>Plugin "{}" installed and started</b>\n\nFile: <code>{}</code>\nItems added to plugins: {}.\n\nNo restart is needed.'
+plugin_upload_not_loaded = "⚠️ <b>Files installed, but the plugin failed to load</b>\n\nFile: <code>{}</code>\nReason: <code>{}</code>\n\nIt is listed under Plugins with ⚠️, where you can load it again or delete it."
+plugin_activation_failed = 'Couldn\'t enable "{}": the plugin code failed to load. Details are in logs/log.log.'

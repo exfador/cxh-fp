@@ -102,11 +102,7 @@ class CLILoggerFormatter(logging.Formatter):
         self.color = supports_color(stream) if color is None else color
 
     def format(self, record):
-        message = clean_text(
-            getattr(record, "console_summary", None)
-            or network_retry_message(record)
-            or safe_message(record)
-        )
+        message = network_retry_message(record) or safe_message(record)
         if has_payload(message):
             message = DETAILS_MESSAGE
         message = " ".join(message.split())

@@ -20,6 +20,7 @@ default_config = {
         "secretKeyHash": "",
         "blockLogin": "0",
         "proxy": "",
+        "pluginPanel": "0",
     },
     "BlockList": {
         "blockDelivery": "0",

@@ -1,7 +1,8 @@
 import logging
+import os
 import sys
 
-from app.constants.console import STATUS_TEXT
+from app.constants.console import DEFAULT_STOP_HINT, STATUS_TEXT, STOP_HINT
 
 
 def runtime_banner():
@@ -52,4 +53,4 @@ def log_ready(cardinal):
             delivery=state("autoDelivery"),
         )
     )
-    logger.info(text["files"])
+    logger.info(text["files"].format(stop=STOP_HINT.get(os.name, DEFAULT_STOP_HINT)))

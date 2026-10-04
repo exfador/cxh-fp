@@ -7,3 +7,4 @@ DISABLED_NOTIFICATION_TYPES = frozenset(
         NotificationTypes.important_announcement,
     }
 )
+DEFAULT_ENABLED_NOTIFICATION_TYPES = frozenset({NotificationTypes.connection})

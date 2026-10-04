@@ -77,14 +77,35 @@ def upload_plugin(controller, message):
     finish_upload(controller, message, offset, entry, installed)
 
 
+def start_uploaded_plugin(controller, entry):
+    cardinal = controller.cardinal
+    if not hasattr(cardinal, "install_plugin"):
+        return None, None
+    with controller.plugin_scope():
+        return cardinal.install_plugin(entry)
+
+
 def finish_upload(controller, message, offset, entry, installed):
     controller.clear_state(message.chat.id, message.from_user.id, True)
     logging.getLogger("TGBot").info(
         "Plugin package installed by user %s: %s", message.from_user.id, entry
     )
-    text = Localizer().translate(
-        "plugin_upload_done", utils.escape(entry), len(installed)
-    )
+    translate = Localizer().translate
+    loaded, result = start_uploaded_plugin(controller, entry)
+    if loaded:
+        name = controller.cardinal.plugins[result].name
+        text = translate(
+            "plugin_upload_started",
+            utils.escape(name),
+            utils.escape(entry),
+            len(installed),
+        )
+    elif loaded is False:
+        text = translate(
+            "plugin_upload_not_loaded", utils.escape(entry), utils.escape(result or "")
+        )
+    else:
+        text = translate("plugin_upload_done", utils.escape(entry), len(installed))
     controller.bot.send_message(
         message.chat.id, text, reply_markup=upload_keyboard(offset)
     )

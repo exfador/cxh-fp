@@ -24,6 +24,7 @@ def arguments(argv=None):
     logs.add_argument("--lines", type=int, default=DEFAULT_TAIL_LINES)
     backup = commands.add_parser("backup", help="Резервная копия / Backup")
     backup.add_argument("action", choices=("create", "check"))
+    commands.add_parser("stop", help="Остановить запущенный бот / Stop running bot")
     return parser.parse_args(argv)
 
 
@@ -93,6 +94,10 @@ def main(argv=None, root=PROJECT_ROOT):
             return show_status(root)
         if options.command == "logs":
             return show_logs(root, options.lines)
+        if options.command == "stop":
+            from app.stop_control import stop_running_bot
+
+            return stop_running_bot(root)
         return backup_command(root, options.action)
     except Exception as error:
         print(

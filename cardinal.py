@@ -33,24 +33,34 @@ import sys
 import os
 import FunPayAPI
 import handlers
+from cardinal_core import announcements
 from locales.localizer import Localizer
 from FunPayAPI import utils as fp_utils
 from Utils import cardinal_tools
 import tg_bot.bot
 from threading import Thread
 
+sys.modules.setdefault("announcements", announcements)
 logger = logging.getLogger("FunPay CoxerHub")
 localizer = Localizer()
 _ = localizer.translate
 from cardinal_core.plugin_data import get_cardinal, PluginData
+from cardinal_core.plugin_compat import pip_main as main
+from cardinal_core.raise_schedule import load_raise_schedule
 from cardinal_core.account_operations import AccountOperations
 from cardinal_core.messaging_runtime import MessagingRuntime
 from cardinal_core.plugin_lifecycle import PluginLifecycle
+from cardinal_core.plugin_hotswap import PluginHotSwap
 from cardinal_core.feature_flags import FeatureFlags
 
 
 class Cardinal(
-    AccountOperations, MessagingRuntime, PluginLifecycle, FeatureFlags, object
+    AccountOperations,
+    MessagingRuntime,
+    PluginLifecycle,
+    PluginHotSwap,
+    FeatureFlags,
+    object,
 ):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "instance"):
@@ -101,8 +111,7 @@ class Cardinal(
         self.run_id = 0
         self.start_time = int(time.time())
         self.balance: FunPayAPI.types.Balance | None = None
-        self.raise_time = {}
-        self.raised_time = {}
+        self.raise_time, self.raised_time = load_raise_schedule()
         self.__exchange_rates = {}
         self.profile: FunPayAPI.types.UserProfile | None = None
         self.tg_profile: FunPayAPI.types.UserProfile | None = None
@@ -158,5 +167,6 @@ class Cardinal(
             "BIND_TO_POST_LOTS_RAISE": self.post_lots_raise_handlers,
         }
         self.plugins: dict[str, PluginData] = {}
+        self.broken_plugins = {}
         self.disabled_plugins = cardinal_tools.load_disabled_plugins()
         self.pinned_plugins = cardinal_tools.load_pinned_plugins()
