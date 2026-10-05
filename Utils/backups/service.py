@@ -17,6 +17,7 @@ from Utils.backups.constants import (
     BACKUP_PATH,
     BACKUP_ROOTS,
     EXCLUDED_DIRECTORIES,
+    EXCLUDED_SUFFIXES,
     STAGING_PATH,
     UPLOAD_PATH,
     PRIVATE_FILE_MODE,
@@ -52,6 +53,8 @@ class BackupService:
                     checked_destination(self.root, path.relative_to(self.root))
                 for filename in sorted(files):
                     path = Path(current) / filename
+                    if path.suffix.casefold() in EXCLUDED_SUFFIXES:
+                        continue
                     if not is_excluded_path(path.relative_to(self.root)):
                         yield path
 

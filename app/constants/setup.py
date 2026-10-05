@@ -1,6 +1,6 @@
-BOT_USERNAME_PREFIX = "coxerhubfp_"
+BOT_USERNAME_PREFIX = "coxerhubfp"
 BOT_USERNAME_EXAMPLE = "coxerhubfp_shop_bot"
-BOT_USERNAME_PATTERN = r"coxerhubfp_[a-z0-9_]+bot"
+BOT_USERNAME_PATTERN = r"coxerhubfp[a-z0-9_]*bot"
 BOT_USERNAME_MAX_LENGTH = 32
 BOT_TOKEN_PATTERN = r"[0-9]{5,20}:[A-Za-z0-9_-]{30,80}"
 GOLDEN_KEY_LENGTH = 32

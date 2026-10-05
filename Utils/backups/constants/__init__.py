@@ -7,6 +7,7 @@ STAGING_PATH = Path("storage/cache/backup")
 MAX_ARCHIVE_FILES = 10_000
 MAX_ARCHIVE_BYTES = 256 * 1024 * 1024
 EXCLUDED_DIRECTORIES = frozenset({"__pycache__"})
+EXCLUDED_SUFFIXES = frozenset({".lock"})
 
 ZIP_ENCRYPTION_FLAG = 1
 PRIVATE_FILE_MODE = 0o600

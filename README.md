@@ -6,7 +6,7 @@
 <p align="center"><b>Ваш магазин FunPay — в Telegram.</b><br>Заказы, покупатели, цены и выдача. Всё через кнопки.</p>
 
 <p align="center">
-  <a href="https://github.com/exfador/cxh-fp/releases"><img src="https://img.shields.io/badge/version-1.1.9-32d2bd?style=flat-square" alt="Версия 1.1.9"></a>
+  <a href="https://github.com/exfador/cxh-fp/releases"><img src="https://img.shields.io/badge/version-1.1.10-32d2bd?style=flat-square" alt="Версия 1.1.10"></a>
   <img src="https://img.shields.io/badge/Python-3.11-60a5fa?style=flat-square" alt="Python 3.11">
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0b152b?style=flat-square" alt="Windows, Linux, macOS">
   <a href="https://github.com/exfador/cxh-fp/actions/workflows/quality.yml"><img src="https://github.com/exfador/cxh-fp/actions/workflows/quality.yml/badge.svg?branch=main" alt="Проверки проекта"></a>
@@ -59,7 +59,7 @@
 
 ## 🚀 Установка
 
-Понадобятся **Python 3.11**, ваш `golden_key` FunPay и токен бота из [@BotFather](https://t.me/BotFather). Создайте бота с именем **CXH FP** и username вида `coxerhubfp_shop_bot`. Токен и ключ вводятся скрыто; отправлять их в чужие чаты не нужно.
+Понадобятся **Python 3.11**, ваш `golden_key` FunPay и токен бота из [@BotFather](https://t.me/BotFather). Создайте бота с именем **CXH FP** и username, который начинается с `coxerhubfp` и заканчивается на `bot`, например `coxerhubfp_shop_bot`. Токен и ключ вводятся скрыто; отправлять их в чужие чаты не нужно.
 
 Скачайте архив из [релизов](https://github.com/exfador/cxh-fp/releases/latest) и распакуйте в отдельную папку. Мастер сначала предлагает язык, готовит окружение и проверяет введённые настройки. При обычном запуске пакеты заново не устанавливаются.
 
