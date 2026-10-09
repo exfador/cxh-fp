@@ -12,6 +12,7 @@ from threading import Thread
 import time
 import handlers as _module_state
 from Utils.logging_support.constants.private_content import CHAT_CONTENT_METADATA
+from tg_bot.constants.message_formatting import PHOTO_CAPTION_LIMIT, PHOTO_LINK_PREFIX
 
 
 def save_init_chats_handler(c: Cardinal, e: InitialChatEvent):
@@ -238,9 +239,22 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
     kb = keyboards.reply(chat_id, chat_name, extend=True)
     Thread(
         target=c.telegram.send_notification,
-        args=(text, kb, utils.NotificationTypes.new_message),
+        args=(text, kb, utils.NotificationTypes.new_message, notification_photo(events, text)),
         daemon=True,
     ).start()
+
+
+def notification_photo(events, text):
+    links = [
+        i.message.image_link
+        for i in events
+        if not i.message.text
+        and isinstance(i.message.image_link, str)
+        and i.message.image_link.startswith(PHOTO_LINK_PREFIX)
+    ]
+    if not links or len(text) > PHOTO_CAPTION_LIMIT:
+        return None
+    return links[-1]
 
 
 def send_review_notification(

@@ -207,6 +207,8 @@ class PluginLifecycle:
                 self.telegram.add_command_to_menu(i[0], i[1])
 
     def toggle_plugin(self, uuid):
+        if vars(self).get("_process_stopping", False):
+            return
         data = self.plugins[uuid]
         if not data.enabled and getattr(data.plugin, PLACEHOLDER_FLAG, False):
             self.activate_plugin(uuid)
@@ -224,6 +226,8 @@ class PluginLifecycle:
     def activate_plugin(self, uuid) -> bool:
         data = self.plugins[uuid]
         with self.plugin_activation_lock:
+            if vars(self).get("_process_stopping", False):
+                return False
             if not getattr(data.plugin, PLACEHOLDER_FLAG, False):
                 data.enabled = True
                 self.remember_plugin_state(uuid)

@@ -5,5 +5,7 @@ FUNPAY_CHAT_LINK = "https://funpay.com/chat/?node={}"
 MESSAGE_CODE_STYLE = "code"
 MESSAGE_EMPHASIS_STYLE = "bold_italic"
 NOTIFICATION_BUTTON_COLUMNS = 2
+PHOTO_CAPTION_LIMIT = 1024
+PHOTO_LINK_PREFIX = "https://"
 LEGACY_BRAND_ASCII = ("cardinal", "fpc", "coxerhub")
 LEGACY_BRAND_MARKERS = ("🐦", "ᴄᴀʀᴅɪɴᴀʟ", "ᑕᗩᖇᗪIᑎᗩᒪ")

@@ -47,7 +47,10 @@ log_sending_greetings = (
 )
 log_new_cmd = "Received the command $YELLOW{}$RESET in the chat with the user $YELLOW{} (CID: {})$RESET."
 ntfc_new_order = "🧾 <b>New order</b>\n<code>{}</code>\n\nBuyer: <code>{}</code>\nAmount: <code>{}</code>\nOrder: <code>#{}</code>\n\n<i>{}</i>"
-ntfc_new_order_not_in_cfg = "ℹ️ Delivery is not set up for this offer."
+ntfc_new_order_not_in_cfg = (
+    "ℹ️ Built-in auto delivery is not configured for this offer. "
+    "Plugin delivery status is not checked in this notification."
+)
 ntfc_new_order_ad_disabled = "ℹ️ Auto delivery is off in Bot features."
 ntfc_new_order_ad_disabled_for_lot = "ℹ️ Auto delivery is off for this offer."
 ntfc_new_order_user_blocked = (

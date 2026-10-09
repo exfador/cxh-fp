@@ -371,21 +371,15 @@ def format_order_text(
 
 
 def restart_program():
-    from Utils.logger import stop_logging, configure_logging
+    from app.shutdown import request_restart
 
-    stop_logging()
-    try:
-        os.execl(sys.executable, sys.executable, *sys.argv)
-    except OSError:
-        configure_logging()
-        raise
+    request_restart()
 
 
 def shut_down():
-    from Utils.logger import stop_logging
+    from app.stop_control import stop_main_thread
 
-    stop_logging()
-    os._exit(0)
+    stop_main_thread()
 
 
 def set_console_title(title: str) -> None:

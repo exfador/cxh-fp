@@ -52,10 +52,13 @@ class PluginHotSwap:
         return stages
 
     def start_plugin(self, plugin) -> None:
-        for stage in self.active_stages():
-            self.run_handlers(list(getattr(plugin, stage, None) or ()), (self,))
-        if self.telegram is not None:
-            self.publish_telegram_commands()
+        with self.plugin_activation_lock:
+            if vars(self).get("_process_stopping", False):
+                return
+            for stage in self.active_stages():
+                self.run_handlers(list(getattr(plugin, stage, None) or ()), (self,))
+            if self.telegram is not None:
+                self.publish_telegram_commands()
 
     def install_plugin(self, file: str) -> tuple[bool, str | None]:
         plugin_compat.install()
@@ -67,6 +70,8 @@ class PluginHotSwap:
         except OSError as error:
             return False, error_summary(error)
         with self.plugin_activation_lock:
+            if vars(self).get("_process_stopping", False):
+                return False, "Бот завершает работу; установка плагина отложена"
             try:
                 plugin, fields = PluginLoader(
                     PLUGIN_DIRECTORY, frozenset(self.disabled_plugins)

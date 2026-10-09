@@ -244,7 +244,14 @@ class RoutingNotifications:
         if keyboard is not None:
             kwargs["reply_markup"] = keyboard
         try:
-            if photo:
+            if isinstance(photo, str):
+                try:
+                    msg = self.bot.send_photo(chat_id, photo, text, **kwargs)
+                except ApiTelegramException as error:
+                    if self._is_unreachable_chat(error):
+                        raise
+                    msg = self.bot.send_message(chat_id, text, **kwargs)
+            elif photo:
                 msg = self.bot.send_photo(chat_id, photo, text, **kwargs)
             else:
                 msg = self.bot.send_message(chat_id, text, **kwargs)

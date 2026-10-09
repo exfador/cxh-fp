@@ -31,29 +31,49 @@ class UpdateSupervisor:
         self.child = None
         self.stopping = False
         self.nonce = None
+        self.restart_delay = settings.UPDATE_RESTART_INITIAL_SECONDS
 
     def forward_signal(self, number, frame):
+        from app.stop_control import request_stop
+
         self.stopping = True
         if self.child is not None and self.child.poll() is None:
-            self.child.send_signal(number)
+            request_stop(self.root)
+
+    def consume_stop_request(self):
+        from app.stop_control import manual_stop_acknowledged, stop_requested
+
+        if not self.stopping and (
+            stop_requested(self.root) or manual_stop_acknowledged(self.root, self.nonce)
+        ):
+            self.stopping = True
+        return self.stopping
 
     def launch(self, deadline=False):
-        if self.stopping:
+        if self.consume_stop_request():
             return False
         self.nonce = secrets.token_hex(settings.UPDATE_TOKEN_BYTES)
         environment = dict(os.environ)
         environment[settings.UPDATE_CHILD_FLAG] = settings.UPDATE_CHILD_VALUE
         environment[settings.UPDATE_HEALTH_NONCE] = self.nonce
-        self.child = subprocess.Popen(
-            [self.executable, str(self.root / "main.py")],
-            cwd=self.root,
-            env=environment,
-        )
-        return self.wait_for_health(deadline)
+        self.child = None
+        try:
+            self.child = subprocess.Popen(
+                [self.executable, str(self.root / "main.py")],
+                cwd=self.root,
+                env=environment,
+            )
+        except OSError as error:
+            print(f"Bot process could not start ({type(error).__name__})", flush=True)
+            return False
+        healthy = self.wait_for_health(deadline)
+        if not healthy and self.clean_exit():
+            self.stopping = True
+        return healthy
 
     def wait_for_health(self, deadline=False):
         limit = monotonic() + settings.UPDATE_BOOT_TIMEOUT
-        while not self.stopping and self.child.poll() is None:
+        while not self.consume_stop_request() and self.child.poll() is None:
             if self.valid_health():
                 return True
             if deadline and monotonic() >= limit:
@@ -75,14 +95,22 @@ class UpdateSupervisor:
         )
 
     def stop_child(self):
+        from app.stop_control import request_stop, request_worker_stop
+
         if self.child is None or self.child.poll() is not None:
             return
-        self.child.terminate()
-        try:
-            self.child.wait(timeout=settings.UPDATE_STOP_TIMEOUT)
-        except subprocess.TimeoutExpired:
-            self.child.kill()
-            self.child.wait()
+        if self.stopping:
+            request_stop(self.root)
+        else:
+            request_worker_stop(self.root, self.nonce)
+        warned = False
+        while self.child.poll() is None:
+            try:
+                self.child.wait(timeout=settings.UPDATE_STOP_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                if not warned:
+                    print("Bot is still draining; keeping locks and waiting before any replacement", flush=True)
+                    warned = True
 
     def validated_request(self):
         request = load_state(self.root / settings.UPDATE_REQUEST_PATH)
@@ -118,7 +146,7 @@ class UpdateSupervisor:
             raise PermissionError("Update operator was revoked")
 
     def apply_request(self):
-        if self.stopping:
+        if self.consume_stop_request():
             return False
         previous_version = self.version
         try:
@@ -139,6 +167,8 @@ class UpdateSupervisor:
         return False if self.stopping else self.launch()
 
     def start_candidate(self, request, manifest, archive):
+        if self.consume_stop_request():
+            return False
         install_archive(self.root, archive, manifest["files"])
         mark_boot_pending(self.root)
         self.version = manifest["version"]
@@ -178,20 +208,69 @@ class UpdateSupervisor:
         signal.signal(signal.SIGINT, self.forward_signal)
         if rollback_pending(self.root):
             self.version = restored_source_version(self.root)
-        if not self.launch():
-            self.stop_child()
-            return self.failure_status()
-        while not self.stopping:
+        healthy = False
+        healthy_since = None
+        while not self.consume_stop_request():
+            if not healthy:
+                try:
+                    healthy = self.launch()
+                except OSError as error:
+                    print(f"Bot process could not start ({type(error).__name__})", flush=True)
+                if not healthy:
+                    self.stop_child()
+                    if self.clean_exit() or not self.wait_for_recovery():
+                        break
+                    continue
+                healthy_since = monotonic()
             result = self.child.wait()
-            if self.stopping:
+            if self.clean_exit():
                 break
-            if result != settings.UPDATE_EXIT_CODE:
-                return result
-            if not self.apply_request():
+            healthy = False
+            if result == settings.UPDATE_RESTART_EXIT_CODE:
+                continue
+            if result == settings.UPDATE_EXIT_CODE:
+                healthy = self.apply_request()
+                if healthy:
+                    healthy_since = monotonic()
+                    continue
                 self.stop_child()
-                return self.failure_status()
+                if self.clean_exit():
+                    break
+            if not self.wait_for_recovery(healthy_since):
+                break
         self.stop_child()
+        if self.stopping:
+            from app.stop_control import clear_stop_request
+
+            clear_stop_request(self.root)
         return 0
+
+    def clean_exit(self):
+        windows_interrupt = settings.UPDATE_CTRL_C_EXIT_CODE
+        return self.consume_stop_request() or (
+            self.child is not None and self.child.returncode in (
+                0, -signal.SIGINT, -signal.SIGTERM,
+                windows_interrupt, windows_interrupt - (1 << 32),
+            )
+        )
+
+    def wait_for_recovery(self, healthy_since=None):
+        if self.consume_stop_request():
+            return False
+        if healthy_since is not None and (
+            monotonic() - healthy_since >= settings.UPDATE_RESTART_STABLE_SECONDS
+        ):
+            self.restart_delay = settings.UPDATE_RESTART_INITIAL_SECONDS
+        delay = self.restart_delay
+        self.restart_delay = min(delay * 2, settings.UPDATE_RESTART_MAX_SECONDS)
+        print(f"Bot exited unexpectedly; restarting in {delay} s", flush=True)
+        deadline = monotonic() + delay
+        while not self.consume_stop_request():
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                return True
+            sleep(min(settings.UPDATE_TICK_SECONDS, remaining))
+        return False
 
     def failure_status(self):
         if self.stopping:

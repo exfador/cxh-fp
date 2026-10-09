@@ -168,13 +168,12 @@ class UpdateService:
         )
 
     def restart_worker(self):
-        from Utils.logger import stop_logging
+        from app.shutdown import request_exit
 
         self.require_managed_runtime()
         self.token = None
         self.stop_event.set()
-        stop_logging()
-        os._exit(settings.UPDATE_EXIT_CODE)
+        request_exit(exit_code=settings.UPDATE_EXIT_CODE)
 
     def notify_result(self):
         if not self.lock.acquire(blocking=False):

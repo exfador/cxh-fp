@@ -29,11 +29,21 @@ class OrderInterface:
         if chat.looking_link:
             text += f'''<b><i>{_module_state._("viewing")}:</i></b>\n<a href="{chat.looking_link}">{chat.looking_text}</a>\n\n'''
         text += utils.format_messages(self.cardinal, chat.messages[-10:])
+        keyboard = kb.reply(utils.parse_chat_id(chat_id), username, False, False)
+        if c.message.photo:
+            self.bot.answer_callback_query(c.id)
+            self.bot.send_message(
+                c.message.chat.id,
+                text,
+                reply_markup=keyboard,
+                message_thread_id=c.message.message_thread_id,
+            )
+            return
         self.bot.edit_message_text(
             text,
             c.message.chat.id,
             c.message.id,
-            reply_markup=kb.reply(utils.parse_chat_id(chat_id), username, False, False),
+            reply_markup=keyboard,
         )
 
     def ask_confirm_refund(self, call: CallbackQuery):
