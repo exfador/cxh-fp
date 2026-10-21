@@ -17,6 +17,7 @@ from tg_bot import (
     proxy_cp,
     chat_sync_cp,
     order_reminder_cp,
+    review_reminder_cp,
     default_cp,
 )
 import time
@@ -270,6 +271,7 @@ class MessagingRuntime:
                 proxy_cp,
                 chat_sync_cp,
                 order_reminder_cp,
+                review_reminder_cp,
                 default_cp,
             ]:
                 self.add_handlers_from_plugin(module)

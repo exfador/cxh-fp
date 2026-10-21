@@ -198,6 +198,24 @@ class PluginLifecycle:
                 _module_state.logger.error(text)
                 _module_state.logger.debug("TRACEBACK", exc_info=True)
 
+    def order_busy_owner(self, order) -> str | None:
+        for func in list(getattr(self, "order_busy_handlers", ())):
+            plugin_uuid = getattr(func, "plugin_uuid", None)
+            data = self.plugins.get(plugin_uuid) if plugin_uuid is not None else None
+            if plugin_uuid is not None and (data is None or not data.enabled):
+                continue
+            owner = data.name if data is not None else "CXH"
+            try:
+                with plugin_owner(plugin_uuid):
+                    busy = func(self, order)
+            except Exception:
+                _module_state.logger.error(_module_state._("crd_handler_err"))
+                _module_state.logger.debug("TRACEBACK", exc_info=True)
+                return owner
+            if busy:
+                return owner
+        return None
+
     def add_telegram_commands(self, uuid: str, commands: list[tuple[str, str, bool]]):
         if uuid not in self.plugins:
             return

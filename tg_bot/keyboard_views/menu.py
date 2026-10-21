@@ -71,6 +71,15 @@ def home_keyboard(token):
         Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL),
         Button(Localizer().translate("menu_join_chat"), url=CHAT_URL),
     )
+    from tg_bot.control.core_operations import button
+    from tg_bot.core_operations import text
+
+    keyboard.row(
+        button(token, "attention", text("🔎 Требуют внимания", "🔎 Needs attention"))
+    )
+    keyboard.row(
+        button(token, "workbench", text("🛠 Управление магазином", "🛠 Shop workbench"))
+    )
     return keyboard
 
 
@@ -82,6 +91,7 @@ def legacy_button(label, section):
         "configs": CBT.CONFIG_LOADER,
         "chat_sync": CBT.CHAT_SYNC,
         "confirm_reminder": CBT.CONFIRM_REMINDER,
+        "review_reminder": CBT.REVIEW_REMINDER,
     }
     return Button(
         Localizer().translate(label),
@@ -101,7 +111,25 @@ def automation_keyboard(token):
 
 
 def settings_keyboard(token):
-    return section_keyboard(token, MENU_SETTINGS_ROWS)
+    from tg_bot.control.core_operations import button
+    from tg_bot.core_operations import text
+
+    keyboard = section_keyboard(token, MENU_SETTINGS_ROWS)
+    keyboard.row(
+        button(
+            token,
+            "core_notices",
+            text("🔔 Технические уведомления", "🔔 Technical notifications"),
+        )
+    )
+    keyboard.row(
+        button(
+            token,
+            "settings_history",
+            text("🕘 История настроек", "🕘 Settings history"),
+        )
+    )
+    return keyboard
 
 
 def service_keyboard(token):
@@ -135,6 +163,19 @@ def service_keyboard(token):
         menu_button("menu_updates_button", token, "updates"),
         menu_button("menu_help_button", token, "help"),
     )
+    from tg_bot.control.core_operations import button
+    from tg_bot.core_operations import text
+
+    keyboard.row(
+        button(
+            token,
+            "verify_backup",
+            text("🛡 Проверить восстановление копии", "🛡 Verify backup restoration"),
+        )
+    )
+    keyboard.row(
+        button(token, "workbench", text("🛠 Управление магазином", "🛠 Shop workbench"))
+    )
     return keyboard.row(menu_button("menu_home_button", token, "home"))
 
 
@@ -153,6 +194,12 @@ def lots_keyboard(token, lots, page, total, searching=False):
         search.append(menu_button("menu_all_lots_button", token, "reset_lots"))
     keyboard.row(*search)
     keyboard.row(menu_button("menu_refresh_lots_button", token, "refresh_lots"))
+    from tg_bot.control.core_operations import button
+    from tg_bot.core_operations import text
+
+    keyboard.row(
+        button(token, "bulk_start", text("📝 Массовые изменения", "📝 Bulk changes"))
+    )
     return menu_back(keyboard, token)
 
 

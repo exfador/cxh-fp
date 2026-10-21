@@ -157,6 +157,15 @@ class BackupService:
                 self._extract_archive(source, Path(temporary))
                 restore_files(self.root, self._staged_files(Path(temporary)))
 
+    def verify_restore(self):
+        with backup_lock(self.root):
+            source = checked_destination(self.root, BACKUP_PATH)
+            result = self.check(source)
+            with tempfile.TemporaryDirectory(prefix="cxh-backup-verify-") as temporary:
+                self._extract_archive(source, Path(temporary))
+                self._staged_files(Path(temporary))
+            return result
+
     @contextmanager
     def snapshot(self):
         with tempfile.TemporaryFile(mode="w+b") as snapshot:

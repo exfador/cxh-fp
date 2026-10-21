@@ -1,3 +1,4 @@
+ar_cmd_invalid = "Enter at least one nonempty command on a single line, for example !help|!support. Square brackets are not supported in command names."
 ar_cmd_not_found_err = (
     "Command <code>{}</code> is no longer in the list. Refresh it and select again."
 )
@@ -54,7 +55,7 @@ desc_ad_fp_lot_list = "📦 <b>Choose an offer</b>\n\nSelect an offer to link de
 desc_gf = "📂 <b>Product files</b>\n\nSelect a file to view stock, add products or download it."
 desc_mv = "💬 <b>Message display</b>\n\nChoose which messages appear in chat notifications and when an alert is sent."
 desc_gr = "👋 <b>Greetings</b>\n\nChoose who receives a greeting and how often.\n\n<b>Current message</b>\n<code>{}</code>"
-desc_oc = "✅ <b>After a sale</b>\n\nMessage sent when a buyer confirms an order.\n\n<b>Current message</b>\n<code>{}</code>"
+desc_oc = "✅ <b>After a sale</b>\n\nReview request mode checks the order after confirmation and sends the message once, only if there is no review. A rating without text counts as a review.\n\nThis mode replaces the regular confirmation reply, avoiding two messages. An uncertain send is never retried automatically. Existing closed orders are not scanned.\n\n<b>Shared reply / review request text</b>\n<code>{}</code>"
 desc_or = "⭐ <b>Review replies</b>\n\nSelect a rating to preview its reply. Use «Text» to edit it and «Auto reply» to turn it on or off. Each rating has its own reply."
 desc_an = "External broadcasts are disabled."
 desc_cfg = "📁 <b>Configuration files</b>\n\nDownload current settings or upload a replacement file."

@@ -27,7 +27,7 @@ class OrderInterface:
             return
         text = ""
         if chat.looking_link:
-            text += f'''<b><i>{_module_state._("viewing")}:</i></b>\n<a href="{chat.looking_link}">{chat.looking_text}</a>\n\n'''
+            text += f"""<b><i>{_module_state._("viewing")}:</i></b>\n<a href="{chat.looking_link}">{chat.looking_text}</a>\n\n"""
         text += utils.format_messages(self.cardinal, chat.messages[-10:])
         keyboard = kb.reply(utils.parse_chat_id(chat_id), username, False, False)
         if c.message.photo:
@@ -151,10 +151,22 @@ class OrderInterface:
         if section == "FunPay" and option == "oldMsgGetMode":
             self.cardinal.switch_msg_get_mode()
         else:
-            self.cardinal.MAIN_CFG[section][option] = str(
-                int(not int(self.cardinal.MAIN_CFG[section][option]))
-            )
-            self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
+            previous = self.cardinal.MAIN_CFG[section][option]
+            value = str(int(not int(previous)))
+            from cardinal_core.settings_history import change, supported
+
+            if supported(section, option):
+                change(
+                    self.cardinal,
+                    c.from_user.id,
+                    section,
+                    option,
+                    value,
+                    expected=previous,
+                )
+            else:
+                self.cardinal.MAIN_CFG[section][option] = value
+                self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
         sections = {
             "FunPay": kb.main_settings,
             "BlockList": kb.blacklist_settings,

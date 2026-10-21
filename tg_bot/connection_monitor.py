@@ -51,6 +51,7 @@ class ConnectionMonitor:
         self.reported = "ok"
         self.incident = None
         self.pending = None
+        self.cards = {}
 
     def start(self):
         Thread(target=self.loop, name=CONNECTION_THREAD_NAME, daemon=True).start()
@@ -89,6 +90,7 @@ class ConnectionMonitor:
                 self.pending = None
             return
         if self.incident is None:
+            self.cards = {}
             self.incident = since
             self.pending = None
             logger.warning(
@@ -143,14 +145,50 @@ class ConnectionMonitor:
         telegram = getattr(self.cardinal, "telegram", None)
         if telegram is None:
             return True
-        attempted = delivered = False
+        attempted = delivered = 0
         for chat_id in self.recipients(telegram):
-            attempted = True
+            attempted += 1
             try:
-                telegram.bot.send_message(
-                    chat_id, text, reply_markup=self.keyboard(auth)
-                )
-                delivered = True
+                self.deliver_card(telegram, chat_id, text, auth)
+                delivered += 1
             except Exception:
                 logger.debug("TRACEBACK", exc_info=True)
-        return delivered or not attempted
+        return delivered == attempted
+
+    def deliver_card(self, telegram, chat_id, text, auth):
+        from pathlib import Path
+        from app.updates.store import load_state
+        from telebot.apihelper import ApiTelegramException
+
+        seller = getattr(self.cardinal.account, "id", 0) or 0
+        try:
+            grouping = load_state(Path(f"storage/core/preferences/{seller}.json")).get(
+                "group_connection", True
+            )
+        except (OSError, ValueError):
+            grouping = True
+        previous = self.cards.get(chat_id)
+        if previous and previous[1] == text:
+            return
+        if grouping and previous and previous[0]:
+            try:
+                telegram.bot.edit_message_text(
+                    text, chat_id, previous[0], reply_markup=self.keyboard(auth)
+                )
+                self.cards[chat_id] = (previous[0], text)
+                return
+            except ApiTelegramException as error:
+                description = error.description.casefold()
+                if "message is not modified" in description:
+                    self.cards[chat_id] = (previous[0], text)
+                    return
+                if (
+                    "message to edit not found" not in description
+                    and "message can't be edited" not in description
+                ):
+                    raise
+        sent = telegram.bot.send_message(
+            chat_id, text, reply_markup=self.keyboard(auth)
+        )
+        identifier = getattr(sent, "message_id", getattr(sent, "id", None))
+        self.cards[chat_id] = (identifier if type(identifier) is int else None, text)

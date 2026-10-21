@@ -27,6 +27,7 @@ GREETING_SETTINGS_ROWS = (
     (("ignoreSystemMessages", "gr_ignore_sys_msgs"),),
 )
 ORDER_SETTINGS_ROWS = (
+    (("requestReview", "oc_request_review"),),
     (("sendReply", "oc_send_reply"),),
     (("watermark", "oc_watermark"),),
 )

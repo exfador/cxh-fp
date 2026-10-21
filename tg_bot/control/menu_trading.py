@@ -28,7 +28,10 @@ class MenuTrading:
     def menu_lots(self, call, token, argument, refreshed=False):
         session = self.menu_session(call, token)
         lots = cached_lots(self.cardinal, session.query)
-        visible, page = menu_page(lots, argument)
+        visible, page = menu_page(
+            lots, session.lot_page if argument == "-" else argument
+        )
+        self.menu_store.update(token, lot_page=page)
         text = Localizer().translate(
             "menu_lots_text",
             len(lots),
@@ -44,7 +47,7 @@ class MenuTrading:
         self.menu_render(call, text, keyboard)
 
     def menu_reset_lots(self, call, token, argument):
-        self.menu_store.update(token, query="")
+        self.menu_store.update(token, query="", lot_page=0)
         self.menu_lots(call, token, 0)
 
     def menu_refresh_lots(self, call, token, argument):
@@ -55,7 +58,7 @@ class MenuTrading:
             if profile.id != self.cardinal.account.id:
                 raise ValueError("Unexpected profile owner")
             self.cardinal.profile = profile
-            self.menu_lots(call, token, 0, refreshed=True)
+            self.menu_lots(call, token, "-", refreshed=True)
         finally:
             self.menu_store.finish_read(token)
 
@@ -93,7 +96,10 @@ class MenuTrading:
             if session.orders is not None
             else cached_orders(self.cardinal)
         )
-        visible, page = menu_page(orders, argument)
+        visible, page = menu_page(
+            orders, session.order_page if argument == "-" else argument
+        )
+        self.menu_store.update(token, order_page=page)
         text = Localizer().translate("menu_orders_text", len(orders), page + 1)
         if not orders:
             text = Localizer().translate("menu_orders_empty")
@@ -107,7 +113,7 @@ class MenuTrading:
         try:
             _, orders, _, _ = self.cardinal.account.get_sales()
             self.menu_store.update(token, orders=tuple(order_rows(orders)))
-            self.menu_orders(call, token, 0, refreshed=True)
+            self.menu_orders(call, token, "-", refreshed=True)
         finally:
             self.menu_store.finish_read(token)
 

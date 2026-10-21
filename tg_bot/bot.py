@@ -54,9 +54,15 @@ from tg_bot.premium_client import PremiumTeleBot
 from tg_bot.panel_navigation import PanelNavigation
 from tg_bot.control.updates import UpdatePanel
 from tg_bot.control.upstream_compat import UpstreamCompat
+from tg_bot.control.core_operations import CoreOperations
+from tg_bot.control.shop_workbench import ShopWorkbench
+from tg_bot.control.bulk_workbench import BulkWorkbench
 
 
 class TGBot(
+    ShopWorkbench,
+    BulkWorkbench,
+    CoreOperations,
     UpstreamCompat,
     UpdatePanel,
     SessionAccess,
@@ -92,7 +98,11 @@ class TGBot(
         self.attempts = {}
         self.init_messages = []
         self.user_states = {}
-        self.menu_store = MenuSessionStore()
+        seller = getattr(cardinal.account, "id", None)
+        seller = seller if type(seller) is int and seller > 0 else 0
+        self.menu_store = MenuSessionStore(
+            preferences_path=f"storage/core/menu-{seller}.json"
+        )
         self.menu_backup_lock = Lock()
         self.process_action_lock = Lock()
         self.notification_settings = utils.load_notification_settings()

@@ -33,7 +33,30 @@ class MenuOrderDetails:
             raise ValueError("Order is not in the menu list")
         order = self.order_details(identifier)
         text = order_text(shortcut, order, Localizer().translate)
-        self.menu_render(call, text, order_keyboard(token, identifier))
+        from tg_bot.core_operations import delivery_text, text as label
+        from tg_bot.control.core_operations import button
+        from cardinal_core.order_journal import journal
+
+        text += delivery_text(self.cardinal, identifier)
+        keyboard = order_keyboard(token, identifier)
+        keyboard.row(
+            button(
+                token,
+                "order_explain",
+                label("🔎 Разобраться с заказом", "🔎 Investigate order"),
+                identifier,
+            )
+        )
+        if journal(self.cardinal).read(identifier).get("native"):
+            keyboard.row(
+                button(
+                    token,
+                    "native_order",
+                    label("📦 Выдача и резерв", "📦 Delivery and reservation"),
+                    identifier,
+                )
+            )
+        self.menu_render(call, text, keyboard)
 
     def order_details(self, identifier):
         cache = self.__dict__.setdefault("order_details_cache", {})

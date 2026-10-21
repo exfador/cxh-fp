@@ -53,9 +53,20 @@ class MenuSections:
         )
 
     def menu_health(self, call, token, argument):
+        from app.shutdown import coordinator
+        from html import escape
+        from tg_bot.core_operations import summary, text
+
+        state = coordinator().snapshot()
+        details = summary(self.cardinal)
+        if state["phase"] != "running":
+            details += "\n\n" + escape(
+                text("Остановка", "Shutdown")
+                + f": {state['phase']} · {state['seconds']} s · {state['waiting']}"
+            )
         self.menu_render(
             call,
-            health_text(self.cardinal),
+            health_text(self.cardinal) + details,
             menu_back(InlineKeyboardMarkup(), token, "service"),
         )
 

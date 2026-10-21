@@ -54,7 +54,8 @@ cr_panel_title = "⏰ <b>Confirmation reminder</b>"
 cr_panel_about = (
     "If a buyer paid, you replied, and the buyer stays silent for {} h without "
     "confirming the order, the bot sends one polite reminder. Each order gets at "
-    "most one reminder, and none is sent if the buyer wrote last."
+    "most one reminder, and none is sent if the buyer wrote last. If a plugin "
+    "reports that it is still delivering the order, the bot waits until it is done."
 )
 cr_panel_state = "State: {}"
 cr_state_on = "🟢 on"
@@ -95,6 +96,34 @@ cr_default_text = (
     "Hello, $username! If you have received order $order_id and everything is fine, "
     "please confirm it on FunPay. Thank you for your purchase!"
 )
+mm_review_reminder = "⭐ Review reminder"
+rv_panel_title = "⭐ <b>Review reminder</b>"
+rv_panel_about = (
+    "If a buyer confirmed an order but has not left a review after {} h, the bot "
+    "sends one polite reminder. Right before sending it checks the order on "
+    "FunPay: if a review already exists, the order was refunded or confirmed by "
+    "an administrator, nothing is sent. Only orders confirmed while the reminder "
+    "is on are counted; several orders of one buyer go into one message."
+)
+rv_panel_hours = "Remind after: <b>{} h</b> since confirmation"
+rv_panel_waiting = "Waiting for a review: {}"
+rv_hours_prompt = (
+    "⏱ How many hours after the order is confirmed should the bot remind about "
+    "a review? Send a number from {} to {}."
+)
+rv_hours_saved = "✅ Done: the bot will remind {} h after the order is confirmed."
+rv_text_prompt = (
+    "📝 Send the review reminder text, up to {} characters.\n\n"
+    "<code>$username</code> becomes the buyer's username, "
+    "<code>$order_id</code> the order number."
+)
+rv_default_text = (
+    "Hello, $username! Thank you for confirming order $order_id. If you liked "
+    "everything, please leave a review on FunPay — it helps us a lot."
+)
 menu_updated_at = "\n\n<i>🕒 Updated at {}</i>"
-operator_bl_expired = "The input time ran out. Open the blacklist and press the button again."
+operator_bl_expired = (
+    "The input time ran out. Open the blacklist and press the button again."
+)
 panel_unchanged = "✅ Up to date — nothing changed."
+oc_request_review = "{} Request a review only if missing"

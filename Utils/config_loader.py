@@ -109,6 +109,7 @@ def load_main_config(config_path: str, persist_migrations: bool = True):
         "OrderConfirm": {
             "watermark": ["0", "1"],
             "sendReply": ["0", "1"],
+            "requestReview": ["0", "1"],
             "replyText": "any",
         },
         "ReviewReply": {
@@ -136,6 +137,12 @@ def load_main_config(config_path: str, persist_migrations: bool = True):
         if section_name == "Greetings" and "cacheInitChats" in config[section_name]:
             config.remove_option(section_name, "cacheInitChats")
         for param_name in values[section_name]:
+            if (
+                section_name == "OrderConfirm"
+                and param_name == "requestReview"
+                and param_name not in config[section_name]
+            ):
+                config.set(section_name, param_name, "0")
             if (
                 section_name == "FunPay"
                 and param_name == "oldMsgGetMode"

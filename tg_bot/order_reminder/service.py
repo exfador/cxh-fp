@@ -29,7 +29,7 @@ def paid_timestamp(order):
     return funpay_timestamp(order_moment(order.date, funpay_now()))
 
 
-def due_orders(orders, chats, reminded, now, hours, blocked=()):
+def due_orders(orders, chats, reminded, now, hours, blocked=(), busy=None):
     blocked = {str(name).casefold() for name in blocked}
     groups = {}
     for order in orders:
@@ -45,6 +45,8 @@ def due_orders(orders, chats, reminded, now, hours, blocked=()):
         if chat is None or chat["author"] != REMINDER_AUTHOR_ME:
             continue
         if chat["time"] < paid_at or now - chat["time"] < hours * 3600:
+            continue
+        if busy is not None and busy(order):
             continue
         groups.setdefault(name, []).append(order)
     return groups
@@ -64,6 +66,7 @@ class OrderReminder:
         self.clock = clock
         self.sleep = sleep
         self.next_check = clock() + REMINDER_FIRST_CHECK_SECONDS
+        self.held = set()
 
     def start(self):
         Thread(target=self.loop, name=REMINDER_THREAD_NAME, daemon=True).start()
@@ -98,6 +101,18 @@ class OrderReminder:
         author = REMINDER_AUTHOR_ME if mine else REMINDER_AUTHOR_OTHER
         self.store.observe(name, message.chat_id, author, self.clock())
 
+    def busy(self, order):
+        owner_of = getattr(self.cardinal, "order_busy_owner", None)
+        owner = owner_of(order) if owner_of is not None else None
+        key = str(order.id)
+        if not owner:
+            self.held.discard(key)
+            return False
+        if key not in self.held:
+            self.held.add(key)
+            logger.info("Не напоминаю о заказе #%s: его ещё выполняет %s.", key, owner)
+        return True
+
     def template(self):
         return self.store.text or Localizer().translate("cr_default_text")
 
@@ -113,6 +128,7 @@ class OrderReminder:
             now,
             self.store.hours,
             getattr(self.cardinal, "blacklist", ()),
+            self.busy,
         )
         sent = 0
         for index, (name, group) in enumerate(groups.items()):

@@ -68,12 +68,15 @@ def init_auto_response_cp(cardinal: Cardinal, *args):
 
     def add_command(m: Message):
         tg.clear_state(m.chat.id, m.from_user.id, True)
-        raw_command = m.text.strip().lower().replace("\n", "")
+        raw_command = m.text.strip().lower()
         commands = [i.strip() for i in raw_command.split("|") if i.strip()]
         error_keyboard = K().row(
             B(_("gl_back"), callback_data=f"{CBT.CATEGORY}:ar"),
             B(_("ar_add_another"), callback_data=CBT.ADD_CMD),
         )
+        if not commands or any(char in raw_command for char in "[]\r\n"):
+            bot.reply_to(m, _("ar_cmd_invalid"), reply_markup=error_keyboard)
+            return
         for cmd in commands:
             if commands.count(cmd) > 1:
                 bot.reply_to(

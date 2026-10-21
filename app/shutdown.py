@@ -10,14 +10,14 @@ import time
 from types import FunctionType, MethodType
 from app.constants import update_runtime as settings
 
-
 logger = logging.getLogger("main")
 
 
 def managed_runtime():
     return (
         os.getenv(settings.UPDATE_CHILD_FLAG) == settings.UPDATE_CHILD_VALUE
-        and re.fullmatch(r"[0-9a-f]{32}", os.getenv(settings.UPDATE_HEALTH_NONCE, "")) is not None
+        and re.fullmatch(r"[0-9a-f]{32}", os.getenv(settings.UPDATE_HEALTH_NONCE, ""))
+        is not None
     )
 
 
@@ -27,7 +27,11 @@ def resource_protocol(resource):
     except TypeError:
         return None
     stop, closed = fields.get("stop_event"), fields.get("closed_event")
-    if type(stop) is not threading.Event or type(closed) is not threading.Event or stop is closed:
+    if (
+        type(stop) is not threading.Event
+        or type(closed) is not threading.Event
+        or stop is closed
+    ):
         return None
     close = inspect.getattr_static(resource, "close", None)
     if isinstance(close, FunctionType):
@@ -49,6 +53,9 @@ class ShutdownCoordinator:
         self.requested_restart = False
         self.restart_executed = False
         self.thread = None
+        self.started_at = None
+        self.phase = "running"
+        self.waiting = ""
         self.grace_seconds, self.poll_seconds = grace_seconds, poll_seconds
 
     def bind(self, cardinal):
@@ -87,9 +94,17 @@ class ShutdownCoordinator:
                     self.requested_exit = settings.UPDATE_RESTART_EXIT_CODE
                 else:
                     self.requested_restart = True
-            if exit_code is not None and not self.manual and not self.requested_restart and self.requested_exit is None:
+            if (
+                exit_code is not None
+                and not self.manual
+                and not self.requested_restart
+                and self.requested_exit is None
+            ):
                 self.requested_exit = exit_code
             self.requested.set()
+            if self.started_at is None:
+                self.started_at = time.monotonic()
+                self.phase = "requested"
             if self.cardinal is not None:
                 vars(self.cardinal)["_process_stopping"] = True
         self.discover()
@@ -100,14 +115,25 @@ class ShutdownCoordinator:
 
     def exit_code(self, fallback):
         with self.lock:
-            return 0 if self.manual else (self.requested_exit if self.requested_exit is not None else fallback)
+            return (
+                0
+                if self.manual
+                else (
+                    self.requested_exit if self.requested_exit is not None else fallback
+                )
+            )
 
     def restart_pending(self):
         with self.lock:
-            return self.requested_restart and not self.manual and not self.restart_executed
+            return (
+                self.requested_restart and not self.manual and not self.restart_executed
+            )
 
     def execute_restart(self):
-        if threading.current_thread() is not threading.main_thread() or not self.closed.is_set():
+        if (
+            threading.current_thread() is not threading.main_thread()
+            or not self.closed.is_set()
+        ):
             raise RuntimeError("Restart requires completed shutdown on the main thread")
         from app.stop_control import acknowledge_manual_stop, stop_requested
         from pathlib import Path
@@ -143,7 +169,9 @@ class ShutdownCoordinator:
         self.request()
         with self.lock:
             if self.thread is None:
-                self.thread = threading.Thread(target=self._drain, name="cxh-shutdown", daemon=False)
+                self.thread = threading.Thread(
+                    target=self._drain, name="cxh-shutdown", daemon=False
+                )
                 self.thread.start()
         deadline = time.monotonic() + self.grace_seconds
         warned = False
@@ -152,16 +180,27 @@ class ShutdownCoordinator:
                 if self.closed.wait(self.poll_seconds):
                     return
                 if not warned and time.monotonic() >= deadline:
-                    logger.warning("Остановка ещё выполняется: ожидаю завершения операций. Блокировки сохранены; повторный запуск не разрешён.")
+                    logger.warning(
+                        "Остановка ещё выполняется: ожидаю завершения операций. Блокировки сохранены; повторный запуск не разрешён. Фаза=%s ресурс=%s",
+                        self.phase,
+                        self.waiting or "core",
+                    )
                     warned = True
             except KeyboardInterrupt:
                 self._manual_signal()
 
     def _drain(self):
         try:
+            self.phase = "handlers"
             if self.cardinal is not None:
-                activation_lock = inspect.getattr_static(self.cardinal, "plugin_activation_lock", None)
-                barrier = activation_lock if type(activation_lock) is type(threading.RLock()) else nullcontext()
+                activation_lock = inspect.getattr_static(
+                    self.cardinal, "plugin_activation_lock", None
+                )
+                barrier = (
+                    activation_lock
+                    if type(activation_lock) is type(threading.RLock())
+                    else nullcontext()
+                )
                 with barrier:
                     self.discover()
                 self.cardinal.stop()
@@ -170,13 +209,41 @@ class ShutdownCoordinator:
                 resources = tuple(self.resources.values())
             for _, _, closed, close in resources:
                 if not closed.is_set():
+                    self.phase = "closing"
+                    self.waiting = (
+                        type(close.__self__).__module__
+                        + "."
+                        + type(close.__self__).__name__
+                    )
                     close()
-            for _, _, closed, _ in resources:
+            for resource, _, closed, _ in resources:
+                self.phase = "waiting"
+                self.waiting = type(resource).__module__ + "." + type(resource).__name__
                 closed.wait()
         except BaseException as error:
-            logger.error("Не удалось завершить остановку (%s). Блокировки сохранены.", type(error).__name__)
+            self.phase = "failed"
+            logger.error(
+                "Не удалось завершить остановку (%s). Блокировки сохранены.",
+                type(error).__name__,
+            )
             return
+        self.phase = "closed"
+        self.waiting = ""
         self.closed.set()
+
+    def snapshot(self):
+        with self.lock:
+            return {
+                "phase": self.phase,
+                "waiting": self.waiting,
+                "seconds": (
+                    int(time.monotonic() - self.started_at)
+                    if self.started_at is not None
+                    else 0
+                ),
+                "resources": len(self.resources),
+                "manual": self.manual,
+            }
 
 
 _coordinator = ShutdownCoordinator()

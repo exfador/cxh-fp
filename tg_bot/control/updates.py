@@ -58,7 +58,34 @@ class UpdatePanel:
             text += "\n\n" + update_text(
                 "available", version=service.pending[0]["version"]
             )
-            keyboard.row(self.update_install_button(service.token))
+            from app.updates.preview import preview_release
+            from tg_bot.core_operations import text as label
+            from html import escape
+
+            manifest = service.pending[0]
+            preview = preview_release(service.root, manifest)
+            text += "\n\n" + label(
+                "✅ Подпись релиза проверена.", "✅ Release signature verified."
+            )
+            text += "\n" + label(
+                f"Изменено файлов: {preview['changed']} · новых: {preview['added']}",
+                f"Changed files: {preview['changed']} · added: {preview['added']}",
+            )
+            text += "\n" + escape(", ".join(preview["areas"]))
+            if preview["compatible"]:
+                text += "\n" + label(
+                    "✅ Зависимости совместимы с установленными.",
+                    "✅ Dependencies match the installed environment.",
+                )
+                keyboard.row(self.update_install_button(service.token))
+            else:
+                text += "\n" + update_text("dependencies")
+            keyboard.row(
+                InlineKeyboardButton(
+                    label("📋 Изменения релиза", "📋 Release notes"),
+                    url=f"https://github.com/{service.repository}/releases/tag/v{manifest['version']}",
+                )
+            )
         self.menu_render(call, text, menu_back(keyboard, token, "service"))
 
     def menu_check_updates(self, call, token, argument):
@@ -141,6 +168,10 @@ class UpdatePanel:
         ):
             return False
         text = update_text(request["status"], version=request["version"])
+        if request["status"] == "done":
+            from tg_bot.core_operations import summary
+
+            text += summary(self.cardinal)
         keyboard = update_home_keyboard()
         try:
             self.bot.edit_message_text(

@@ -68,9 +68,14 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
                 not cfg_obj.getboolean("disableMultiDelivery")
             ):
                 amount = e.order.amount if e.order.amount else 1
-            products, goods_left = cardinal_tools.get_products(
-                f"storage/products/{file_name}", amount
-            )
+            if getattr(e, "_core_delivery_guard", False):
+                from cardinal_core.native_stock import reserve
+
+                products, goods_left = reserve(c, e.order.id, file_name, amount)
+            else:
+                products, goods_left = cardinal_tools.get_products(
+                    f"storage/products/{file_name}", amount
+                )
             delivery_text = delivery_text.replace(
                 "$product", "\n".join(products).replace("\\n", "\n")
             )
@@ -86,7 +91,15 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
             f"Произошла ошибка при получении товаров для заказа {e.order.id}: {str(exc)}",
         )
         return
-    result = c.send_message(chat_id, delivery_text, e.order.buyer_username)
+    if getattr(e, "_core_delivery_guard", False):
+        from cardinal_core.order_journal import journal
+
+        journal(c).save(e.order.id, "sending")
+        result = c.send_message(
+            chat_id, delivery_text, e.order.buyer_username, attempts=1
+        )
+    else:
+        result = c.send_message(chat_id, delivery_text, e.order.buyer_username)
     if not result:
         _module_state.logger.error(
             f"Не удалось отправить товар для ордера $YELLOW{e.order.id}$RESET."
@@ -108,6 +121,11 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
                 "Товары не возвращены в остаток. Проверьте переписку с покупателем.",
             )
             _module_state.logger.error(e.error_text)
+        elif getattr(e, "_core_delivery_guard", False):
+            e.error_text = (
+                f"Результат отправки заказа {e.order.id} не подтверждён. "
+                "Резерв сохранён, повторная выдача остановлена. Проверьте чат заказа."
+            )
         elif file_name and products:
             cardinal_tools.add_products(
                 f"storage/products/{file_name}", products, at_zero_position=True
@@ -138,8 +156,10 @@ def deliver_product_handler(c: Cardinal, e: NewOrderEvent, *args) -> None:
         )
         return
     c.run_handlers(c.pre_delivery_handlers, (c, e))
-    _module_state.deliver_goods(c, e, *args)
-    c.run_handlers(c.post_delivery_handlers, (c, e))
+    from cardinal_core.order_journal import guarded_delivery
+
+    if guarded_delivery(c, e, _module_state.deliver_goods, args):
+        c.run_handlers(c.post_delivery_handlers, (c, e))
 
 
 def send_delivery_notification_handler(c: Cardinal, e: NewOrderEvent):

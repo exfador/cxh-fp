@@ -341,6 +341,7 @@ from locales.translations.ru.settings import (
     ar_cmd_added,
     ar_cmd_already_exists_err,
     ar_cmd_not_found_err,
+    ar_cmd_invalid,
     ar_enter_new_cmd,
     ar_notification_text,
     ar_notification_text_changed,

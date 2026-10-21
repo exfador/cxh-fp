@@ -96,6 +96,8 @@ class MenuNavigation:
         self.bot.answer_callback_query(call.id)
         if action != "confirm_restart":
             self.menu_store.update(token, pending_restart=False)
+        if action != "native_confirm":
+            self.menu_store.update(token, pending_resolution="")
         self.clear_state(call.message.chat.id, call.from_user.id)
         self.menu_dispatch(call, token, action, argument)
 
@@ -105,14 +107,49 @@ class MenuNavigation:
         if call.menu_revision is None:
             return
         try:
+            if action in {
+                "refresh_home",
+                "refresh_orders",
+                "refresh_lots",
+                "order",
+                "refresh_stats",
+                "lot",
+            }:
+                from tg_bot.core_operations import text
+
+                self.menu_render(
+                    call,
+                    text("⏳ Получаю данные…", "⏳ Loading…"),
+                    home_keyboard(token),
+                )
             getattr(self, MENU_ACTION_HANDLERS[action])(call, token, argument)
         except Exception as error:
             logging.getLogger(MENU_LOGGER).warning(
                 MENU_FAILURE_LOG, action, type(error).__name__
             )
-            self.menu_render(
-                call, Localizer().translate("menu_action_error"), home_keyboard(token)
+            from tg_bot.control.core_operations import button
+            from tg_bot.core_operations import text
+
+            keyboard = home_keyboard(token)
+            safe_reads = {
+                "refresh_home",
+                "refresh_orders",
+                "refresh_lots",
+                "order",
+                "refresh_stats",
+                "lot",
+                "health",
+                "attention",
+                "plugin_health",
+            }
+            if action in safe_reads and len(str(argument)) <= 20:
+                keyboard.row(
+                    button(token, action, text("↻ Повторить", "↻ Retry"), str(argument))
+                )
+            keyboard.row(
+                button(token, "health", text("ℹ️ Диагностика", "ℹ️ Diagnostics"))
             )
+            self.menu_render(call, Localizer().translate("menu_action_error"), keyboard)
 
     def menu_render(self, call, text, keyboard):
         if not self.menu_response_is_current(call):

@@ -56,6 +56,12 @@ from bot_handlers.notifications import (
 )
 from bot_handlers.chat_sync import chat_sync_initial_handler, chat_sync_message_handler
 from bot_handlers.order_reminder import order_reminder_message_handler
+from bot_handlers.review_reminder import (
+    review_reminder_chat_handler,
+    review_reminder_message_handler,
+    review_reminder_status_handler,
+)
+from cardinal_core.order_journal import observe_order
 from bot_handlers.delivery import (
     update_lots_states,
     update_profiles_handler,
@@ -77,6 +83,7 @@ BIND_TO_LAST_CHAT_MESSAGE_CHANGED = [
     send_response_handler,
     process_review_handler,
     old_send_new_msg_notification_handler,
+    review_reminder_chat_handler,
     send_command_notification_handler,
     test_auto_delivery_handler,
 ]
@@ -90,6 +97,7 @@ BIND_TO_NEW_MESSAGE = [
     send_new_msg_notification_handler,
     chat_sync_message_handler,
     order_reminder_message_handler,
+    review_reminder_message_handler,
     send_command_notification_handler,
     test_auto_delivery_handler,
 ]
@@ -97,13 +105,16 @@ BIND_TO_POST_LOTS_RAISE = [send_categories_raised_notification_handler]
 BIND_TO_NEW_ORDER = [
     log_new_order_handler,
     setup_event_attributes_handler,
+    observe_order,
     send_new_order_notification_handler,
     deliver_product_handler,
     update_profiles_handler,
 ]
 BIND_TO_ORDER_STATUS_CHANGED = [
+    observe_order,
     send_thank_u_message_handler,
     send_order_confirmed_notification_handler,
+    review_reminder_status_handler,
 ]
 BIND_TO_POST_DELIVERY = [send_delivery_notification_handler]
 BIND_TO_POST_START = [send_bot_started_notification_handler]

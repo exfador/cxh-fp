@@ -127,13 +127,13 @@ def home_text(cardinal):
         len(cached_lots(cardinal)) if cardinal.profile is not None else "—",
         sum(chat.unread for chat in cached_chats(cardinal)),
     )
-    return text
+    from tg_bot.core_operations import summary
+
+    return text + summary(cardinal)
 
 
 def updated_at():
-    return Localizer().translate(
-        "menu_updated_at", strftime(MENU_UPDATED_FORMAT)
-    )
+    return Localizer().translate("menu_updated_at", strftime(MENU_UPDATED_FORMAT))
 
 
 def home_profile_summary(cardinal, translate):

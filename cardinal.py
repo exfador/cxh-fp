@@ -146,6 +146,7 @@ class Cardinal(
         self.post_delivery_handlers = []
         self.pre_lots_raise_handlers = []
         self.post_lots_raise_handlers = []
+        self.order_busy_handlers = []
         self.handler_bind_var_names = {
             "BIND_TO_PRE_INIT": self.pre_init_handlers,
             "BIND_TO_POST_INIT": self.post_init_handlers,
@@ -165,6 +166,7 @@ class Cardinal(
             "BIND_TO_POST_DELIVERY": self.post_delivery_handlers,
             "BIND_TO_PRE_LOTS_RAISE": self.pre_lots_raise_handlers,
             "BIND_TO_POST_LOTS_RAISE": self.post_lots_raise_handlers,
+            "BIND_TO_ORDER_BUSY": self.order_busy_handlers,
         }
         self.plugins: dict[str, PluginData] = {}
         self.broken_plugins = {}

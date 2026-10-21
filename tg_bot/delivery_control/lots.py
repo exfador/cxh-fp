@@ -228,6 +228,7 @@ class DeliveryLotControls:
                 _module_state._("gf_creation_err", file_name),
                 reply_markup=error_keyboard,
             )
+            return
         file_index = os.listdir("storage/products").index(file_name)
         offset = file_index - 4 if file_index - 4 > 0 else 0
         keyboard = K().row(

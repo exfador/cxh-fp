@@ -21,6 +21,8 @@ import cardinal as _module_state
 class AccountOperations:
     def _Cardinal__init_account(self) -> None:
         while True:
+            if vars(self).get("_process_stopping", False):
+                raise KeyboardInterrupt
             try:
                 self.account.get()
                 self.balance = self.get_balance()
@@ -45,7 +47,7 @@ class AccountOperations:
                     type(error).__name__,
                 )
                 _module_state.logger.debug("FunPay connection traceback", exc_info=True)
-            except:
+            except Exception:
                 _module_state.logger.error(
                     _module_state._("crd_acc_get_unexpected_err")
                 )
@@ -62,6 +64,8 @@ class AccountOperations:
     ) -> bool:
         _module_state.logger.info(_module_state._("crd_getting_profile_data"))
         while attempts or infinite_polling:
+            if vars(self).get("_process_stopping", False):
+                raise KeyboardInterrupt
             try:
                 profile = self.account.get_user(self.account.id)
                 break
@@ -72,7 +76,7 @@ class AccountOperations:
             except FunPayAPI.exceptions.RequestFailedError as e:
                 _module_state.logger.error(e.short_str())
                 _module_state.logger.debug(e)
-            except:
+            except Exception:
                 _module_state.logger.error(
                     _module_state._("crd_profile_get_unexpected_err")
                 )

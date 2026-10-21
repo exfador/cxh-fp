@@ -58,6 +58,11 @@ def upload_plugin(controller, message):
     translate = Localizer().translate
     try:
         data, filename = download_document(controller.bot, message.document)
+        from Utils.plugin_install.preflight import inspect_package
+
+        diagnostic = inspect_package(
+            data, filename, getattr(controller.cardinal, "plugins", {})
+        )
         entry, installed = PluginInstaller(PROJECT_ROOT).install(data, filename)
     except PluginInstallError as error:
         controller.bot.send_message(
@@ -74,7 +79,7 @@ def upload_plugin(controller, message):
             reply_markup=CLEAR_STATE_BTN(),
         )
         return
-    finish_upload(controller, message, offset, entry, installed)
+    finish_upload(controller, message, offset, entry, installed, diagnostic)
 
 
 def start_uploaded_plugin(controller, entry):
@@ -85,7 +90,7 @@ def start_uploaded_plugin(controller, entry):
         return cardinal.install_plugin(entry)
 
 
-def finish_upload(controller, message, offset, entry, installed):
+def finish_upload(controller, message, offset, entry, installed, diagnostic=None):
     controller.clear_state(message.chat.id, message.from_user.id, True)
     logging.getLogger("TGBot").info(
         "Plugin package installed by user %s: %s", message.from_user.id, entry
@@ -106,6 +111,21 @@ def finish_upload(controller, message, offset, entry, installed):
         )
     else:
         text = translate("plugin_upload_done", utils.escape(entry), len(installed))
+    if diagnostic:
+        from tg_bot.core_operations import text as label
+
+        text += (
+            "\n\n"
+            + label("Проверка пакета", "Package check")
+            + f": {diagnostic['files']} files"
+        )
+        text += "\n" + utils.escape(
+            " · ".join(
+                diagnostic["metadata"].get(key, "?") for key in ("NAME", "VERSION")
+            )
+        )
+        for warning in diagnostic["warnings"]:
+            text += "\n⚠️ " + utils.escape(warning)
     controller.bot.send_message(
         message.chat.id, text, reply_markup=upload_keyboard(offset)
     )

@@ -96,6 +96,18 @@ def update_profiles_handler(
 
 
 def send_thank_u_message_handler(cardinal: Cardinal, event: OrderStatusChangedEvent):
+    from cardinal_core.review_requests import enabled, request_review
+
+    if event.order.status is not types.OrderStatuses.CLOSED:
+        return
+    if enabled(cardinal):
+        Thread(
+            target=request_review,
+            args=(cardinal, event.order.id),
+            name="review-request",
+            daemon=True,
+        ).start()
+        return
     if (
         not cardinal.MAIN_CFG["OrderConfirm"].getboolean("sendReply")
         or event.order.status is not types.OrderStatuses.CLOSED

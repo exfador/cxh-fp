@@ -48,6 +48,7 @@ default_config = {
     "OrderConfirm": {
         "watermark": "1",
         "sendReply": "0",
+        "requestReview": "0",
         "replyText": "$username, спасибо за заказ $order_id! Буду рад вашему отзыву.",
     },
     "ReviewReply": {
