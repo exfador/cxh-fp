@@ -490,7 +490,6 @@ def __dir__():
 
 from locales.translations.ru.promotion import (
     plugin_store_button,
-    social_service_button,
     plugin_upload_confirmation,
     plugin_upload_confirmation_expired,
 )

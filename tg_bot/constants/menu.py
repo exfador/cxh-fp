@@ -16,7 +16,7 @@ MENU_FAILURE_LOG = "Menu action failed: action=%s error=%s"
 MENU_PRIVATE_CHAT = "private"
 MENU_NOT_MODIFIED = "message is not modified"
 MENU_ORDER_ID_PATTERN = r"[A-Za-z0-9]{1,20}"
-MENU_INPUT_ACTIONS = frozenset({"search", "price"})
+MENU_INPUT_ACTIONS = frozenset({"search", "price", "withdraw_amount"})
 MENU_ACTION_HANDLERS = MappingProxyType(
     {
         "workbench": "menu_workbench",
@@ -46,6 +46,9 @@ MENU_ACTION_HANDLERS = MappingProxyType(
         "plugin_health": "menu_plugin_health",
         "core_notices": "menu_core_notices",
         "verify_backup": "menu_verify_backup",
+        "withdraw": "menu_withdraw",
+        "rate_alerts": "menu_rate_alerts",
+        "withdraw_amount": "menu_withdraw_amount",
         "home": "menu_home",
         "refresh_home": "menu_refresh_home",
         "automation": "menu_automation",

@@ -8,7 +8,6 @@ from app.constants.branding import CHAT_URL
 from tg_bot.keyboard_views.styled_button import StyledButton
 from tg_bot.constants.button_styles import BUTTON_PRIMARY, BUTTON_SUCCESS
 from tg_bot import CBT, static_keyboards
-from tg_bot.constants.promotion import SOCIAL_SERVICE_LABEL, SOCIAL_SERVICE_URL
 from tg_bot.constants.menu import (
     MENU_PREFIX,
     MENU_UNSET_ARGUMENT,
@@ -67,13 +66,15 @@ def home_keyboard(token):
         menu_button("menu_stats_button", token, "stats"),
         menu_button("menu_refresh_dashboard", token, "refresh_home"),
     )
-    keyboard.row(
-        Button(Localizer().translate(SOCIAL_SERVICE_LABEL), url=SOCIAL_SERVICE_URL),
-        Button(Localizer().translate("menu_join_chat"), url=CHAT_URL),
-    )
     from tg_bot.control.core_operations import button
     from tg_bot.core_operations import text
 
+    keyboard.row(
+        button(
+            token, "withdraw", text("💸 Вывод: сколько придёт", "💸 Payout estimate")
+        )
+    )
+    keyboard.row(Button(Localizer().translate("menu_join_chat"), url=CHAT_URL))
     keyboard.row(
         button(token, "attention", text("🔎 Требуют внимания", "🔎 Needs attention"))
     )
@@ -281,9 +282,17 @@ def chat_keyboard(token):
 def account_keyboard(token, profile_url):
     from tg_bot.keyboard_views.operator import operator_button
 
+    from tg_bot.control.core_operations import button
+    from tg_bot.core_operations import text
+
     keyboard = Keyboard().row(
         Button(Localizer().translate("menu_open_profile_button"), url=profile_url),
         Button(Localizer().translate("menu_balance_button"), url=FUNPAY_BALANCE_URL),
+    )
+    keyboard.row(
+        button(
+            token, "withdraw", text("💸 Вывод: сколько придёт", "💸 Payout estimate")
+        )
     )
     keyboard.row(
         operator_button("operator_refresh_profile", "refresh_profile"),

@@ -281,8 +281,10 @@ class MessagingRuntime:
             published = self.publish_telegram_commands()
             Thread(target=self.telegram.run, daemon=True).start()
             from tg_bot.connection_monitor import ConnectionMonitor
+            from tg_bot.rate_watch import RateWatch
 
             self.connection_monitor = ConnectionMonitor(self).start()
+            self.rate_watch = RateWatch(self).start()
         self._Cardinal__init_account()
         self.runner = FunPayAPI.Runner(self.account, self.old_mode_enabled)
         self._Cardinal__update_profile()

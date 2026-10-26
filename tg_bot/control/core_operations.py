@@ -1,5 +1,6 @@
 import io
 import logging
+import time
 from html import escape
 from threading import Thread
 
@@ -19,11 +20,48 @@ from tg_bot.core_operations import (
     plugin_rows,
     preference_path,
 )
+from cardinal_core.withdraw_quote import CRYPTO, build_quote
+from tg_bot.constants.menu import FUNPAY_BALANCE_URL, MENU_INPUT_STATE
 from tg_bot.keyboard_views.menu import menu_back
+from tg_bot.rate_watch import alerts_enabled, remember_rate, set_alerts
+from tg_bot.withdraw_view import money, withdraw_text
+
+WITHDRAW_CACHE_SECONDS = 60
+WITHDRAW_REFRESH_SECONDS = 20
 
 
 def button(token, action, label, argument="-"):
     return Button(label, callback_data=f"hub:{token}:{action}:{argument}")
+
+
+def withdraw_keyboard(token, alerts=False, custom=False):
+    keyboard = Keyboard().row(
+        button(token, "withdraw", text("💰 Весь баланс", "💰 Whole balance"))
+        if custom
+        else button(token, "withdraw", text("↻ Обновить", "↻ Refresh"), "refresh")
+    )
+    keyboard.row(
+        button(
+            token,
+            "withdraw_amount",
+            text("✍️ Другая сумма", "✍️ Another amount")
+            if custom
+            else text("✍️ Своя сумма", "✍️ Custom amount"),
+        )
+    )
+    label = (
+        text("🔔 Уведомления о падении курса: вкл", "🔔 Rate drop alerts: on")
+        if alerts
+        else text("🔕 Уведомления о падении курса: выкл", "🔕 Rate drop alerts: off")
+    )
+    keyboard.row(button(token, "rate_alerts", label, "off" if alerts else "on"))
+    keyboard.row(
+        Button(
+            text("🌐 Открыть вывод на FunPay", "🌐 Open FunPay payouts"),
+            url=FUNPAY_BALANCE_URL,
+        )
+    )
+    return menu_back(keyboard, token, "profile")
 
 
 class CoreOperations:
@@ -231,3 +269,131 @@ class CoreOperations:
         finally:
             self.menu_store.finish_read(token)
         self.menu_render(call, content, menu_back(Keyboard(), token, "service"))
+
+    def withdraw_screen(self, quote):
+        alerts = alerts_enabled(self.cardinal)
+        trend = vars(self).get("withdraw_trend")
+        return withdraw_text(quote, trend, alerts), alerts
+
+    def menu_withdraw(self, call, token, argument):
+        cached = vars(self).get("withdraw_quote")
+        age = time.time() - cached.created_at if cached else None
+        limit = (
+            WITHDRAW_REFRESH_SECONDS
+            if argument == "refresh"
+            else WITHDRAW_CACHE_SECONDS
+        )
+        if cached and age < limit:
+            content, alerts = self.withdraw_screen(cached)
+            return self.menu_render(call, content, withdraw_keyboard(token, alerts))
+        alerts = alerts_enabled(self.cardinal)
+        if not getattr(self.cardinal.account, "is_initiated", False):
+            return self.menu_render(
+                call,
+                text(
+                    "🔴 Аккаунт FunPay ещё не подключён — расчёт вывода недоступен.",
+                    "🔴 The FunPay account is not connected yet; payout estimate unavailable.",
+                ),
+                withdraw_keyboard(token, alerts),
+            )
+        if not self.menu_store.begin_read(token, "withdraw"):
+            return
+        self.menu_render(
+            call,
+            text(
+                "⏳ Проверяю баланс и комиссии вывода на FunPay…",
+                "⏳ Checking balance and payout fees on FunPay…",
+            ),
+            withdraw_keyboard(token, alerts),
+        )
+        Thread(target=self.withdraw_worker, args=(call, token), daemon=True).start()
+
+    def withdraw_options_for(self, amount):
+        cached = vars(self).get("withdraw_options")
+        if (
+            amount is not None
+            and cached
+            and time.time() - cached[0] < WITHDRAW_CACHE_SECONDS
+        ):
+            return cached[1]
+        options = self.cardinal.account.get_withdraw_options()
+        self.withdraw_options = (time.time(), options)
+        return options
+
+    def menu_withdraw_amount(self, call, token, argument):
+        self.menu_render(
+            call,
+            text(
+                "✍️ <b>Своя сумма вывода</b>\nНапишите сумму в рублях, например 5000 или 12 500,50 — посчитаю, сколько придёт на карту, по СБП и в USDT. Бот ничего не выводит.",
+                "✍️ <b>Custom payout amount</b>\nSend an amount in rubles, such as 5000 or 12500.50, and I will show what arrives on a card, via СБП and in USDT. The bot never withdraws.",
+            ),
+            menu_back(Keyboard(), token, "withdraw"),
+        )
+        self.set_state(
+            call.message.chat.id,
+            call.message.id,
+            call.from_user.id,
+            MENU_INPUT_STATE,
+            {"token": token, "action": "withdraw_amount", "lot_id": None},
+        )
+
+    def withdraw_custom(self, call, token, amount):
+        if not getattr(self.cardinal.account, "is_initiated", False):
+            raise ValueError("FunPay account is not connected")
+        if not self.menu_store.begin_read(token, "withdraw_amount"):
+            return False
+        self.menu_render(
+            call,
+            text("⏳ Считаю вывод для ", "⏳ Estimating payout for ")
+            + money(amount)
+            + "…",
+            withdraw_keyboard(token, alerts_enabled(self.cardinal), True),
+        )
+        Thread(
+            target=self.withdraw_worker, args=(call, token, amount), daemon=True
+        ).start()
+        return True
+
+    def withdraw_worker(self, call, token, amount=None):
+        account = self.cardinal.account
+        alerts = alerts_enabled(self.cardinal)
+        try:
+            quote = build_quote(
+                self.withdraw_options_for(amount), account.calc_withdraw, amount=amount
+            )
+            if amount is None:
+                self.withdraw_quote = quote
+            rate = next(
+                (item.fee.rate for item in quote.channels if item.channel == CRYPTO),
+                None,
+            )
+            if rate:
+                self.withdraw_trend = remember_rate(
+                    self.cardinal, rate, evaluate=False
+                )[0]
+            content, alerts = self.withdraw_screen(quote)
+        except Exception:
+            logging.getLogger("TGBot").exception("Payout estimate failed")
+            content = text(
+                "❌ Не удалось получить данные вывода с FunPay. Попробуйте ещё раз через минуту.",
+                "❌ Could not load payout data from FunPay. Try again in a minute.",
+            )
+        finally:
+            self.menu_store.finish_read(token)
+        self.menu_render(
+            call, content, withdraw_keyboard(token, alerts, amount is not None)
+        )
+
+    def menu_rate_alerts(self, call, token, argument):
+        enabled = argument == "on"
+        set_alerts(self.cardinal, enabled)
+        logging.getLogger("TGBot").info(
+            "Rate drop alerts %s by %s",
+            "enabled" if enabled else "disabled",
+            call.from_user.id,
+        )
+        cached = vars(self).get("withdraw_quote")
+        if cached is not None:
+            content, alerts = self.withdraw_screen(cached)
+            return self.menu_render(call, content, withdraw_keyboard(token, alerts))
+        self.menu_withdraw(call, token, "-")

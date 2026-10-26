@@ -38,6 +38,7 @@ from FunPayAPI.accounts.offers_and_chats import OfferChatQueries
 from FunPayAPI.accounts.profile_catalog import ProfileCatalog
 from FunPayAPI.accounts.chat_parsing import ChatParser
 from FunPayAPI.accounts.order_parsing import OrderParser
+from FunPayAPI.accounts.withdraw_quotes import WithdrawQuotes
 
 
 class Account(
@@ -45,6 +46,7 @@ class Account(
     CatalogQueries,
     ChatOperations,
     Transactions,
+    WithdrawQuotes,
     OrderQueries,
     OfferChatQueries,
     ProfileCatalog,

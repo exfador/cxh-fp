@@ -82,6 +82,9 @@ sys_cpu_summary = (
 )
 menu_search_invalid = "Send an offer title or ID, using no more than 120 characters."
 menu_price_invalid = "Send a positive price in rubles, such as 590 or 590.50."
+menu_withdraw_amount_invalid = (
+    "Send an amount in rubles from 1 to 10,000,000, such as 5000 or 12500.50."
+)
 
 menu_start_command_description = "Profile and store management"
 menu_home_profile_id = "\nFunPay ID: <code>{0}</code>"

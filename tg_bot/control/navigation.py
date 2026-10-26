@@ -141,6 +141,7 @@ class MenuNavigation:
                 "health",
                 "attention",
                 "plugin_health",
+                "withdraw",
             }
             if action in safe_reads and len(str(argument)) <= 20:
                 keyboard.row(

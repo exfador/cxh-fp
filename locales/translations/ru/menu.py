@@ -85,6 +85,9 @@ sys_cpu_summary = (
 )
 menu_search_invalid = "Отправьте название или ID лота. Длина — до 120 символов."
 menu_price_invalid = "Нужна положительная сумма в рублях, например 590 или 590,50."
+menu_withdraw_amount_invalid = (
+    "Нужна сумма в рублях от 1 до 10 000 000, например 5000 или 12 500,50."
+)
 
 menu_start_command_description = "Профиль и управление магазином"
 menu_home_profile_id = "\nID FunPay: <code>{0}</code>"

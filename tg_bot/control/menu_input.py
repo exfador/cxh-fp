@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from locales.localizer import Localizer
 from FunPayAPI.accounts.price_quotes import validate_price, validate_identifier
+from cardinal_core.withdraw_quote import parse_rub_amount
 from tg_bot.constants.menu import MENU_INPUT_STATE, MENU_FAILURE_LOG, MENU_LOGGER
 from tg_bot.menu_data import normalize_search, cached_lots
 from tg_bot.keyboard_views.menu import menu_back
@@ -48,9 +49,7 @@ class MenuInput:
             token = self.menu_store.create(
                 message.from_user.id, message.chat.id, state["mid"]
             )
-            session = self.menu_store.update(
-                token, lot_id=state["data"].get("lot_id")
-            )
+            session = self.menu_store.update(token, lot_id=state["data"].get("lot_id"))
         call = SimpleNamespace(
             from_user=message.from_user,
             message=SimpleNamespace(chat=message.chat, id=session.message_id),
@@ -84,6 +83,8 @@ class MenuInput:
             return normalize_search(text or "")
         if action == "price":
             return validate_price(text)
+        if action == "withdraw_amount":
+            return parse_rub_amount(text)
         raise ValueError("Unsupported menu input")
 
     def menu_apply_input(self, call, token, action, session, value):
@@ -91,6 +92,8 @@ class MenuInput:
             self.menu_store.update(token, query=value)
             self.menu_lots(call, token, 0)
             return True
+        if action == "withdraw_amount":
+            return self.withdraw_custom(call, token, value)
         if action == "price" and session.lot_id is not None:
             return self.menu_quote(call, token, session.lot_id, value)
         raise ValueError("Unsupported menu input")
