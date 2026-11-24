@@ -189,15 +189,33 @@ class OrderQueries:
                 )
                 for game_option in games_options:
                     game_name = game_option.text
-                    sections_list = json.loads(game_option.get("data-data"))
-                    for key, section_name in sections_list:
-                        section_type, section_id = key.split("-")
+                    raw_sections = game_option.get("data-data")
+                    if not raw_sections:
+                        continue
+                    try:
+                        sections_list = json.loads(raw_sections)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(sections_list, list):
+                        continue
+                    for section in sections_list:
+                        if not isinstance(section, list) or len(section) != 2:
+                            continue
+                        key, section_name = section
+                        if not isinstance(key, str) or not isinstance(section_name, str):
+                            continue
+                        section_type, separator, section_id = key.partition("-")
+                        if not separator:
+                            continue
+                        try:
+                            section_id = int(section_id)
+                        except ValueError:
+                            continue
                         section_type = (
                             types.SubCategoryTypes.COMMON
                             if section_type == "lot"
                             else types.SubCategoryTypes.CURRENCY
                         )
-                        section_id = int(section_id)
                         subcategories[f"{game_name}, {section_name}"] = (
                             self.get_subcategory(section_type, section_id)
                         )
