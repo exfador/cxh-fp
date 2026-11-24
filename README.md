@@ -6,18 +6,36 @@
 <p align="center"><b>Ваш магазин FunPay — в Telegram.</b><br>Заказы, покупатели, цены и выдача. Всё через кнопки.</p>
 
 <p align="center">
-  <a href="https://github.com/exfador/cxh-fp/releases"><img src="https://img.shields.io/badge/version-1.1.13-32d2bd?style=flat-square" alt="Версия 1.1.13"></a>
+  <a href="https://github.com/exfador/cxh-fp/releases/tag/v1.1.14"><img src="https://img.shields.io/badge/version-1.1.14-32d2bd?style=flat-square" alt="Версия 1.1.14"></a>
   <img src="https://img.shields.io/badge/Python-3.11-60a5fa?style=flat-square" alt="Python 3.11">
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0b152b?style=flat-square" alt="Windows, Linux, macOS">
   <a href="https://github.com/exfador/cxh-fp/actions/workflows/quality.yml"><img src="https://github.com/exfador/cxh-fp/actions/workflows/quality.yml/badge.svg?branch=main" alt="Проверки проекта"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/exfador/cxh-fp/releases/latest"><b>📦 Скачать</b></a> ·
+  <a href="https://github.com/exfador/cxh-fp/releases/download/v1.1.14/cxh-fp.zip"><b>📦 Скачать v1.1.14</b></a> ·
   <a href="#-установка"><b>🚀 Установить</b></a> ·
   <a href="https://t.me/funpay_coxerhub"><b>📣 Канал проекта</b></a> ·
   <a href="https://t.me/coxerhub"><b>👤 COXERHUB</b></a>
 </p>
+
+---
+
+## 🧾 Что нового в v1.1.14
+
+**Заказы снова загружаются, если FunPay прислал неполные данные фильтра игр.** Бот пропускает отсутствующие или повреждённые данные о разделах и продолжает читать страницу «Мои продажи». Исправление действует при обновлении списка, обработке новых заказов и проверке напоминаний по оплаченным заказам.
+
+[📦 Скачать CXH FP v1.1.14](https://github.com/exfador/cxh-fp/releases/download/v1.1.14/cxh-fp.zip) · [Описание релиза](https://github.com/exfador/cxh-fp/releases/tag/v1.1.14)
+
+### Как обновиться с v1.1.13
+
+Этот выпуск устанавливается вручную.
+
+1. Остановите бот и распакуйте `cxh-fp.zip` в отдельную папку.
+2. В папке действующей установки замените `FunPayAPI/accounts/orders.py` и `app/constants/runtime.py` файлами из архива. Рабочие настройки, товары и плагины сохраняются.
+3. Запустите бот привычным способом и откройте список заказов в Telegram.
+
+Для чистой установки используйте [обычную инструкцию](#-установка). Для Docker пересоберите образ из распакованного кода, сохранив текущие тома.
 
 ---
 
@@ -61,7 +79,7 @@
 
 Понадобятся **Python 3.11**, ваш `golden_key` FunPay и токен бота из [@BotFather](https://t.me/BotFather). Создайте бота с именем **CXH FP** и username, который начинается с `coxerhubfp` и заканчивается на `bot`, например `coxerhubfp_shop_bot`. Токен и ключ вводятся скрыто; отправлять их в чужие чаты не нужно.
 
-Скачайте архив из [релизов](https://github.com/exfador/cxh-fp/releases/latest) и распакуйте в отдельную папку. Мастер сначала предлагает язык, готовит окружение и проверяет введённые настройки. При обычном запуске пакеты заново не устанавливаются.
+Скачайте архив из [релизов](https://github.com/exfador/cxh-fp/releases/tag/v1.1.14) и распакуйте в отдельную папку. Мастер сначала предлагает язык, готовит окружение и проверяет введённые настройки. При обычном запуске пакеты заново не устанавливаются.
 
 ### 🪟 Windows
 
